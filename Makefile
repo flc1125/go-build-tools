@@ -116,7 +116,7 @@ crosslink: $(CROSSLINK)
 	$(CROSSLINK) --root=$(CURDIR) --prune
 
 gowork: $(CROSSLINK)
-	$(CROSSLINK) work --root=$(CURDIR) --go=1.25
+	$(CROSSLINK) work --root=$(CURDIR) --go=1.26
 
 multimod-verify: $(MULTIMOD)
 	$(MULTIMOD) verify --versioning-file $(CURDIR)/versions.yaml

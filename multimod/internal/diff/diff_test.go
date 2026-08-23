@@ -107,7 +107,7 @@ func TestHasChanged(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			testRepoRoot := t.TempDir()
 			err := sharedtest.WriteTempFiles(map[string][]byte{
-				filepath.Join(testRepoRoot, "go.mod"): []byte("module example.com/test\n\ngo 1.25\n"),
+				filepath.Join(testRepoRoot, "go.mod"): []byte("module example.com/test\n\ngo 1.26\n"),
 				filepath.Join(testRepoRoot, "versions.yaml"): []byte(`module-sets:
   tools:
     version: v0.8.0
