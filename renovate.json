@@ -13,17 +13,6 @@
   },
   "packageRules": [
     {
-      "description": "Keep internal module versions managed by multimod",
-      "matchManagers": [
-        "gomod"
-      ],
-      "matchPackageNames": [
-        "github.com/flc1125/go-build-tools",
-        "github.com/flc1125/go-build-tools/**"
-      ],
-      "enabled": false
-    },
-    {
       "description": "Group Go subrepository updates",
       "matchManagers": [
         "gomod"
