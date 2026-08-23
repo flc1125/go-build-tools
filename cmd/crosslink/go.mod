@@ -1,0 +1,28 @@
+// Modified by flc1125 for github.com/flc1125/go-build-tools.
+// SPDX-License-Identifier: Apache-2.0
+module github.com/flc1125/go-build-tools/cmd/crosslink
+
+go 1.26.0
+
+require (
+	github.com/flc1125/go-build-tools v0.0.0-20260823153624-81545f04b24f
+	github.com/google/go-cmp v0.7.0
+	github.com/otiai10/copy v1.14.1
+	github.com/spf13/cobra v1.10.2
+	github.com/spf13/pflag v1.0.10
+	github.com/stretchr/testify v1.11.1
+	go.uber.org/zap v1.27.1
+	golang.org/x/mod v0.35.0
+	golang.org/x/sys v0.43.0
+)
+
+require (
+	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/inconshreveable/mousetrap v1.1.0 // indirect
+	github.com/kr/pretty v0.3.1 // indirect
+	github.com/otiai10/mint v1.6.3 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
+	go.uber.org/multierr v1.11.0 // indirect
+	golang.org/x/sync v0.20.0 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
+)

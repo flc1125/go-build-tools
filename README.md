@@ -10,36 +10,37 @@ is based on OpenTelemetry's
 
 ## Tools
 
-### [`crosslink`](./crosslink/README.md)
+### [`crosslink`](./cmd/crosslink/README.md)
 
 Manages repositories containing multiple `go.mod` files, including local
 `replace` directives, `go.work` files, pruning, and dependency-aware tidy
 ordering.
 
 ```sh
-go install github.com/flc1125/go-build-tools/crosslink@latest
+go install github.com/flc1125/go-build-tools/cmd/crosslink@latest
 ```
 
-### [`multimod`](./multimod/README.md)
+### [`multimod`](./cmd/multimod/README.md)
 
 Verifies and releases sets of Go modules from a single repository.
 
 ```sh
-go install github.com/flc1125/go-build-tools/multimod@latest
+go install github.com/flc1125/go-build-tools/cmd/multimod@latest
 ```
 
-### [`gotmpl`](./gotmpl/README.md)
+### [`gotmpl`](./cmd/gotmpl/README.md)
 
 Generates files from Go templates and JSON data.
 
 ```sh
-go install github.com/flc1125/go-build-tools/gotmpl@latest
+go install github.com/flc1125/go-build-tools/cmd/gotmpl@latest
 ```
 
 ## Development
 
-The repository intentionally keeps the upstream multi-module layout. Run the
-full local validation with:
+Each command is an independent module under `cmd`, while shared packages remain
+in the root module. The committed `go.work` connects all modules for local
+development. Run the full local validation with:
 
 ```sh
 make precommit

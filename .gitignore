@@ -8,13 +8,12 @@ Thumbs.db
 *.iml
 *.so
 coverage.*
-/go.work
 go.work.sum
 
-crosslink/internal/test_data/
-!crosslink/internal/test_data/.placeholder
+cmd/crosslink/internal/test_data/
+!cmd/crosslink/internal/test_data/.placeholder
 
-crosslink/crosslink
-gotmpl/gotmpl
-multimod/multimod
+cmd/crosslink/crosslink
+cmd/gotmpl/gotmpl
+cmd/multimod/multimod
 *.exe

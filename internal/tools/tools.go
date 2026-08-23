@@ -8,9 +8,6 @@ package tools
 
 import (
 	_ "github.com/client9/misspell/cmd/misspell"
-	_ "github.com/flc1125/go-build-tools/crosslink"
-	_ "github.com/flc1125/go-build-tools/gotmpl"
-	_ "github.com/flc1125/go-build-tools/multimod"
 	_ "github.com/golangci/golangci-lint/v2/cmd/golangci-lint"
 	_ "golang.org/x/vuln/cmd/govulncheck"
 )

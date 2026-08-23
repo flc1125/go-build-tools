@@ -22,5 +22,9 @@ The `multimod` dependency on `github.com/go-git/go-git/v5` is updated from
 v5.18.0 to v5.19.2, together with the required transitive dependencies, to
 address vulnerabilities reported after the upstream v0.30.0 release.
 
+The three command modules are organized under `cmd`. Command-specific packages
+remain below each command module's `internal` directory, while packages shared
+by multiple commands remain in the root module's `internal` directory.
+
 Original OpenTelemetry copyright and license headers are retained. Files whose
 Go import paths were adapted carry an additional modification notice.

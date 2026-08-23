@@ -1,0 +1,391 @@
+// Copyright The OpenTelemetry Authors
+// Modified by flc1125 for github.com/flc1125/go-build-tools.
+// SPDX-License-Identifier: Apache-2.0
+
+package shared
+
+import (
+	"io"
+	"log"
+	"os"
+	"path/filepath"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/flc1125/go-build-tools/cmd/multimod/internal/shared/sharedtest"
+)
+
+var testDataDir, _ = filepath.Abs("./test_data")
+
+// TestMain performs setup for the tests and suppress printing logs.
+func TestMain(m *testing.M) {
+	log.SetOutput(io.Discard)
+	os.Exit(m.Run())
+}
+
+func TestReadVersioningFile(t *testing.T) {
+	testCases := []struct {
+		name                    string
+		versioningFilename      string
+		ShouldError             bool
+		ExpectedModuleSets      ModuleSetMap
+		ExpectedExcludedModules []ModulePath
+	}{
+		{
+			name:               "valid versioning",
+			versioningFilename: filepath.Join(testDataDir, "read_versioning_filename/versions_valid.yaml"),
+			ShouldError:        false,
+			ExpectedModuleSets: ModuleSetMap{
+				"mod-set-1": ModuleSet{
+					Version: "v1.2.3-RC1+meta",
+					Modules: []ModulePath{
+						"go.opentelemetry.io/test/test1",
+						"go.opentelemetry.io/test/test2",
+					},
+				},
+				"mod-set-2": ModuleSet{
+					Version: "v0.1.0",
+					Modules: []ModulePath{
+						"go.opentelemetry.io/test3",
+					},
+				},
+			},
+			ExpectedExcludedModules: []ModulePath{
+				"go.opentelemetry.io/excluded1",
+			},
+		},
+		{
+			name:                    "invalid version file syntax",
+			versioningFilename:      filepath.Join(testDataDir, "read_versioning_filename/versions_invalid_syntax.yaml"),
+			ShouldError:             true,
+			ExpectedModuleSets:      nil,
+			ExpectedExcludedModules: nil,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			actual, err := readVersioningFile(tc.versioningFilename)
+
+			if tc.ShouldError {
+				assert.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+
+			assert.IsType(t, versionConfig{}, actual)
+			assert.Equal(t, tc.ExpectedModuleSets, actual.ModuleSets)
+			assert.Equal(t, tc.ExpectedExcludedModules, actual.ExcludedModules)
+		})
+	}
+}
+
+func TestBuildModuleSetsMap(t *testing.T) {
+	vCfg := versionConfig{
+		ModuleSets: ModuleSetMap{
+			"mod-set-1": ModuleSet{
+				Version: "v1.2.3-RC1+meta",
+				Modules: []ModulePath{
+					"go.opentelemetry.io/test/test1",
+					"go.opentelemetry.io/test/test2",
+				},
+			},
+			"mod-set-2": ModuleSet{
+				Version: "v0.1.0",
+				Modules: []ModulePath{
+					"go.opentelemetry.io/test3",
+				},
+			},
+		},
+		ExcludedModules: []ModulePath{
+			"go.opentelemetry.io/excluded1",
+		},
+	}
+
+	expected := ModuleSetMap{
+		"mod-set-1": ModuleSet{
+			Version: "v1.2.3-RC1+meta",
+			Modules: []ModulePath{
+				"go.opentelemetry.io/test/test1",
+				"go.opentelemetry.io/test/test2",
+			},
+		},
+		"mod-set-2": ModuleSet{
+			Version: "v0.1.0",
+			Modules: []ModulePath{
+				"go.opentelemetry.io/test3",
+			},
+		},
+	}
+
+	actual := vCfg.buildModuleSetsMap()
+	assert.Equal(t, expected, actual)
+}
+
+func TestBuildModuleMap(t *testing.T) {
+	testCases := []struct {
+		name        string
+		vCfg        versionConfig
+		shouldError bool
+		expected    ModuleInfoMap
+	}{
+		{
+			name: "valid",
+			vCfg: versionConfig{
+				ModuleSets: ModuleSetMap{
+					"mod-set-1": ModuleSet{
+						Version: "v1.2.3-RC1+meta",
+						Modules: []ModulePath{
+							"go.opentelemetry.io/test/test1",
+							"go.opentelemetry.io/test/test2",
+						},
+					},
+					"mod-set-2": ModuleSet{
+						Version: "v0.1.0",
+						Modules: []ModulePath{
+							"go.opentelemetry.io/test3",
+						},
+					},
+				},
+				ExcludedModules: []ModulePath{
+					"go.opentelemetry.io/excluded1",
+				},
+			},
+			shouldError: false,
+			expected: ModuleInfoMap{
+				"go.opentelemetry.io/test/test1": ModuleInfo{
+					ModuleSetName: "mod-set-1",
+					Version:       "v1.2.3-RC1+meta",
+				},
+				"go.opentelemetry.io/test/test2": ModuleInfo{
+					ModuleSetName: "mod-set-1",
+					Version:       "v1.2.3-RC1+meta",
+				},
+				"go.opentelemetry.io/test3": ModuleInfo{
+					ModuleSetName: "mod-set-2",
+					Version:       "v0.1.0",
+				},
+			},
+		},
+		{
+			name: "module duplicated",
+			vCfg: versionConfig{
+				ModuleSets: ModuleSetMap{
+					"mod-set-1": ModuleSet{
+						Version: "v1.2.3-RC1+meta",
+						Modules: []ModulePath{
+							"go.opentelemetry.io/duplicate",
+						},
+					},
+					"mod-set-2": ModuleSet{
+						Version: "v0.1.0",
+						Modules: []ModulePath{
+							"go.opentelemetry.io/duplicate",
+						},
+					},
+				},
+				ExcludedModules: []ModulePath{
+					"go.opentelemetry.io/excluded1",
+				},
+			},
+			shouldError: true,
+			expected:    nil,
+		},
+		{
+			name: "module listed in set and excluded",
+			vCfg: versionConfig{
+				ModuleSets: ModuleSetMap{
+					"mod-set-1": ModuleSet{
+						Version: "v1.2.3-RC1+meta",
+						Modules: []ModulePath{
+							"go.opentelemetry.io/excluded",
+						},
+					},
+				},
+				ExcludedModules: []ModulePath{
+					"go.opentelemetry.io/excluded",
+				},
+			},
+			shouldError: true,
+			expected:    nil,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			actual, err := tc.vCfg.buildModuleMap()
+
+			if tc.shouldError {
+				assert.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+			assert.Equal(t, tc.expected, actual)
+		})
+	}
+}
+
+func TestShouldExcludeModule(t *testing.T) {
+	vCfg := versionConfig{
+		ModuleSets: ModuleSetMap{
+			"mod-set-1": ModuleSet{
+				Version: "v1.2.3-RC1+meta",
+				Modules: []ModulePath{
+					"go.opentelemetry.io/test/test1",
+					"go.opentelemetry.io/test/test2",
+				},
+			},
+			"mod-set-2": ModuleSet{
+				Version: "v0.1.0",
+				Modules: []ModulePath{
+					"go.opentelemetry.io/test3",
+				},
+			},
+		},
+		ExcludedModules: []ModulePath{
+			"go.opentelemetry.io/excluded1",
+		},
+	}
+
+	testCases := []struct {
+		ModPath  ModulePath
+		Expected bool
+	}{
+		{ModPath: "go.opentelemetry.io/test/test1", Expected: false},
+		{ModPath: "go.opentelemetry.io/test/test2", Expected: false},
+		{ModPath: "go.opentelemetry.io/test3", Expected: false},
+		{ModPath: "go.opentelemetry.io/excluded1", Expected: true},
+		{ModPath: "go.opentelemetry.io/doesnotexist", Expected: false},
+	}
+
+	for _, tc := range testCases {
+		actual := vCfg.shouldExcludeModule(tc.ModPath)
+
+		assert.Equal(t, actual, tc.Expected)
+	}
+}
+
+func TestGetExcludedModules(t *testing.T) {
+	vCfg := versionConfig{
+		ModuleSets: ModuleSetMap{
+			"mod-set-1": ModuleSet{
+				Version: "v1.2.3-RC1+meta",
+				Modules: []ModulePath{
+					"go.opentelemetry.io/test/test1",
+					"go.opentelemetry.io/test/test2",
+				},
+			},
+			"mod-set-2": ModuleSet{
+				Version: "v0.1.0",
+				Modules: []ModulePath{
+					"go.opentelemetry.io/test3",
+				},
+			},
+		},
+		ExcludedModules: []ModulePath{
+			"go.opentelemetry.io/excluded1",
+		},
+	}
+
+	expected := excludedModulesSet{
+		"go.opentelemetry.io/excluded1": struct{}{},
+	}
+
+	actual := vCfg.getExcludedModules()
+
+	assert.Equal(t, expected, actual)
+}
+
+func TestBuildModulePathMap(t *testing.T) {
+	vCfg := versionConfig{
+		ModuleSets: ModuleSetMap{
+			"mod-set-1": ModuleSet{
+				Version: "v1.2.3-RC1+meta",
+				Modules: []ModulePath{
+					"go.opentelemetry.io/test/test1",
+				},
+			},
+			"mod-set-2": ModuleSet{
+				Version: "v0.1.0",
+				Modules: []ModulePath{
+					"go.opentelemetry.io/test3",
+					"go.opentelemetry.io/testroot",
+				},
+			},
+		},
+		ExcludedModules: []ModulePath{
+			"go.opentelemetry.io/test/testexcluded",
+		},
+	}
+
+	tmpRootDir := t.TempDir()
+	modFiles := map[string][]byte{
+		filepath.Join(tmpRootDir, "test", "test1", "go.mod"): []byte("module \"go.opentelemetry.io/test/test1\"\n\ngo 1.16\n\n" +
+			"require (\n\t\"go.opentelemetry.io/testroot/v2\" v2.0.0\n)\n"),
+		filepath.Join(tmpRootDir, "test", "go.mod"):          []byte("module go.opentelemetry.io/test3\n\ngo 1.16\n"),
+		filepath.Join(tmpRootDir, "go.mod"):                  []byte("module go.opentelemetry.io/testroot/v2\n\ngo 1.16\n"),
+		filepath.Join(tmpRootDir, "test", "test2", "go.mod"): []byte("module \"go.opentelemetry.io/test/testexcluded\"\n\ngo 1.16\n"),
+	}
+
+	require.NoError(t, sharedtest.WriteTempFiles(modFiles), "could not create go mod file tree")
+
+	expected := ModulePathMap{
+		"go.opentelemetry.io/test/test1":  ModuleFilePath(filepath.Join(tmpRootDir, "test", "test1", "go.mod")),
+		"go.opentelemetry.io/test3":       ModuleFilePath(filepath.Join(tmpRootDir, "test", "go.mod")),
+		"go.opentelemetry.io/testroot/v2": ModuleFilePath(filepath.Join(tmpRootDir, "go.mod")),
+	}
+
+	actual, err := vCfg.BuildModulePathMap(tmpRootDir)
+
+	require.NoError(t, err)
+	assert.Equal(t, expected, actual)
+}
+
+func TestAltVersionFiles(t *testing.T) {
+	vFile := filepath.Join(testDataDir, "alt_version_files/versions.yaml")
+	actual, err := readVersioningFile(vFile)
+	require.NoError(t, err)
+	assert.Equal(t, versionConfig{
+		ModuleSets: ModuleSetMap{
+			"mod-set-1": ModuleSet{
+				Version: "v0.0.1",
+				Modules: []ModulePath{
+					"go.opentelemetry.io/test/test1",
+					"go.opentelemetry.io/test/test2",
+				},
+			},
+			"mod-set-2": ModuleSet{
+				Version: "v0.1.0",
+				Modules: []ModulePath{
+					"go.opentelemetry.io/test3",
+				},
+			},
+		},
+		ExcludedModules: []ModulePath{"go.opentelemetry.io/excluded1"},
+		Modules: map[ModulePath]ModuleDef{
+			"go.opentelemetry.io/excluded1": {
+				VersionRefs: []string{
+					"./sub/pkg/version/versions.go",
+				},
+			},
+			"go.opentelemetry.io/test/test1": {
+				VersionRefs: []string{
+					"./versions.go",
+					"./internal/version/versions.go",
+				},
+			},
+			"go.opentelemetry.io/test/test2": {
+				VersionRefs: []string{
+					"./internal/deeper/version/versions.go",
+				},
+			},
+			"go.opentelemetry.io/unknown": {
+				VersionRefs: []string{
+					"../unknown/versions.go",
+				},
+			},
+		},
+	}, actual)
+}
