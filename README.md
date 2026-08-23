@@ -47,7 +47,7 @@ make precommit
 
 The modules require Go 1.26.0 or newer. CI validates the latest patch releases
 of Go 1.26 and 1.27 on Linux and Windows. Development tool versions, including
-golangci-lint v2.11.4, are pinned in `internal/tools`.
+golangci-lint v2.13.1, are pinned in `internal/tools`.
 
 See [UPSTREAM.md](./UPSTREAM.md) for provenance and the compatibility baseline.
 

@@ -16,6 +16,9 @@ CROSSLINK := $(TOOLS_DIR)/crosslink
 GOTMPL := $(TOOLS_DIR)/gotmpl
 MULTIMOD := $(TOOLS_DIR)/multimod
 GOLANGCI_LINT := $(TOOLS_DIR)/golangci-lint
+GOLANGCI_LINT_MODULE := github.com/golangci/golangci-lint/v2
+GOLANGCI_LINT_PACKAGE := $(GOLANGCI_LINT_MODULE)/cmd/golangci-lint
+GOLANGCI_LINT_VERSION := $(shell cd $(TOOLS_MOD_DIR) && $(GO) list -m -f '{{.Version}}' $(GOLANGCI_LINT_MODULE))
 MISSPELL := $(TOOLS_DIR)/misspell
 GOVULNCHECK := $(TOOLS_DIR)/govulncheck
 COMMIT ?= HEAD
@@ -40,9 +43,11 @@ $(TOOLS_DIR)/%: $(TOOLS_MOD_DIR)/go.mod | $(TOOLS_DIR)
 $(CROSSLINK): PACKAGE=github.com/flc1125/go-build-tools/crosslink
 $(GOTMPL): PACKAGE=github.com/flc1125/go-build-tools/gotmpl
 $(MULTIMOD): PACKAGE=github.com/flc1125/go-build-tools/multimod
-$(GOLANGCI_LINT): PACKAGE=github.com/golangci/golangci-lint/v2/cmd/golangci-lint
 $(MISSPELL): PACKAGE=github.com/client9/misspell/cmd/misspell
 $(GOVULNCHECK): PACKAGE=golang.org/x/vuln/cmd/govulncheck
+
+$(GOLANGCI_LINT): $(TOOLS_MOD_DIR)/go.mod Makefile | $(TOOLS_DIR)
+	GOBIN=$(TOOLS_DIR) $(GO) install $(GOLANGCI_LINT_PACKAGE)@$(GOLANGCI_LINT_VERSION)
 
 tools: $(CROSSLINK) $(GOTMPL) $(MULTIMOD) $(GOLANGCI_LINT) $(MISSPELL) $(GOVULNCHECK)
 
