@@ -1,0 +1,91 @@
+# Modified by flc1125 for github.com/flc1125/go-build-tools.
+# SPDX-License-Identifier: Apache-2.0
+version: "2"
+run:
+  concurrency: 4
+  modules-download-mode: readonly
+  issues-exit-code: 1
+  tests: true
+  allow-parallel-runners: true
+linters:
+  enable:
+    - copyloopvar
+    - depguard
+    - errorlint
+    - gocritic
+    - gosec
+    - misspell
+    - revive
+    - unconvert
+    - unparam
+    - usetesting
+  settings:
+    depguard:
+      rules:
+        main:
+          deny:
+            - pkg: sync/atomic
+              desc: Use go.uber.org/atomic instead of sync/atomic
+            - pkg: github.com/pkg/errors
+              desc: Use 'errors' or 'fmt' instead of github.com/pkg/errors
+        non-tests:
+          files:
+            - '!$test'
+            - '!**/*test/*.go'
+          deny:
+            - pkg: testing
+            - pkg: github.com/stretchr/testify
+    govet:
+      disable:
+        - fieldalignment
+      enable-all: true
+      settings:
+        printf:
+          funcs:
+            - (github.com/golangci/golangci-lint/pkg/logutils.Log).Infof
+            - (github.com/golangci/golangci-lint/pkg/logutils.Log).Warnf
+            - (github.com/golangci/golangci-lint/pkg/logutils.Log).Errorf
+            - (github.com/golangci/golangci-lint/pkg/logutils.Log).Fatalf
+    misspell:
+      locale: US
+      ignore-rules:
+        - cancelled
+        - metre
+        - meter
+        - metres
+        - kilometre
+        - kilometres
+  exclusions:
+    generated: lax
+    presets:
+      - std-error-handling
+    rules:
+      - linters:
+          - gosec
+        text: 'G404:'
+      - linters:
+          - gosec
+        text: 'G402:'
+      - linters:
+          - gosec
+        text: 'G112:'
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    gofmt:
+      simplify: true
+    goimports:
+      local-prefixes:
+        - github.com/flc1125/go-build-tools
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$

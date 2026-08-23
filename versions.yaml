@@ -1,0 +1,14 @@
+# Copyright The OpenTelemetry Authors
+# Modified by flc1125 for github.com/flc1125/go-build-tools.
+# SPDX-License-Identifier: Apache-2.0
+module-sets:
+  tools:
+    version: v0.1.0
+    modules:
+      - github.com/flc1125/go-build-tools
+      - github.com/flc1125/go-build-tools/crosslink
+      - github.com/flc1125/go-build-tools/gotmpl
+      - github.com/flc1125/go-build-tools/multimod
+
+excluded-modules:
+  - github.com/flc1125/go-build-tools/internal/tools
