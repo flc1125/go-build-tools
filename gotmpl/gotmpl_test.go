@@ -17,6 +17,7 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -59,9 +60,11 @@ func TestReplacesExistingOutput(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, want, got)
 
-	info, err := os.Stat(destPath)
-	require.NoError(t, err)
-	assert.Equal(t, os.FileMode(0o600), info.Mode().Perm())
+	if runtime.GOOS != "windows" {
+		info, err := os.Stat(destPath)
+		require.NoError(t, err)
+		assert.Equal(t, os.FileMode(0o600), info.Mode().Perm())
+	}
 }
 
 func TestEmptyOut(t *testing.T) {
