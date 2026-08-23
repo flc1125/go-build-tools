@@ -1,0 +1,3 @@
+module github.com/flc1125/go-build-tools/crosslink/testroot/testA
+
+go 1.20

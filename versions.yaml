@@ -1,0 +1,9 @@
+# Derived from OpenTelemetry opentelemetry-go-build-tools v0.30.0.
+module-sets:
+  tools:
+    version: v0.1.0
+    modules:
+      - github.com/flc1125/go-build-tools
+      - github.com/flc1125/go-build-tools/crosslink
+      - github.com/flc1125/go-build-tools/gotmpl
+      - github.com/flc1125/go-build-tools/multimod

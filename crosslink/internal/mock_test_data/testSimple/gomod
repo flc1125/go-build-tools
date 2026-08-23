@@ -1,0 +1,10 @@
+module github.com/flc1125/go-build-tools/crosslink/testroot
+
+go 1.20
+
+require github.com/flc1125/go-build-tools/crosslink/testroot/testA v1.0.0
+
+// ensure they do not get pruned if prune flag is not set
+replace github.com/flc1125/go-build-tools/crosslink/testroot/testZ => ./testZ
+
+replace github.com/flc1125/go-build-tools/crosslink/testroot/testY => ./testY
