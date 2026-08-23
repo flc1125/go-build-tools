@@ -1,0 +1,6 @@
+module github.com/flc1125/go-build-tools/cmd/crosslink/testroot/testB
+
+go 1.20
+
+require github.com/flc1125/go-build-tools/cmd/crosslink/testroot/testA v1.0.0
+require github.com/flc1125/go-build-tools/cmd/crosslink/testroot/testC v1.0.0

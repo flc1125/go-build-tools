@@ -18,9 +18,13 @@ MULTIMOD := $(TOOLS_DIR)/multimod
 GOLANGCI_LINT := $(TOOLS_DIR)/golangci-lint
 GOLANGCI_LINT_MODULE := github.com/golangci/golangci-lint/v2
 GOLANGCI_LINT_PACKAGE := $(GOLANGCI_LINT_MODULE)/cmd/golangci-lint
-GOLANGCI_LINT_VERSION := $(shell cd $(TOOLS_MOD_DIR) && $(GO) list -m -f '{{.Version}}' $(GOLANGCI_LINT_MODULE))
+GOLANGCI_LINT_VERSION := $(shell cd $(TOOLS_MOD_DIR) && GOWORK=off $(GO) list -m -f '{{.Version}}' $(GOLANGCI_LINT_MODULE))
 MISSPELL := $(TOOLS_DIR)/misspell
 GOVULNCHECK := $(TOOLS_DIR)/govulncheck
+SHARED_GO_SOURCES := $(shell find ./internal -path './internal/tools' -prune -o -type f -name '*.go' -print)
+CROSSLINK_GO_SOURCES := $(shell find ./cmd/crosslink -type f -name '*.go')
+GOTMPL_GO_SOURCES := $(shell find ./cmd/gotmpl -type f -name '*.go')
+MULTIMOD_GO_SOURCES := $(shell find ./cmd/multimod -type f -name '*.go')
 COMMIT ?= HEAD
 REMOTE ?= origin
 
@@ -28,7 +32,7 @@ REMOTE ?= origin
 
 .PHONY: precommit ci fmt fmt-check tidy generate build vet lint golangci-lint \
 	misspell govulncheck test test-race \
-	license-check check-clean-work-tree tools crosslink gowork \
+	license-check check-clean-work-tree tools gowork \
 	multimod-verify multimod-prerelease print-tags create-tags push-tags
 
 precommit: fmt tidy generate vet lint test multimod-verify
@@ -38,16 +42,22 @@ $(TOOLS_DIR):
 	mkdir -p $@
 
 $(TOOLS_DIR)/%: $(TOOLS_MOD_DIR)/go.mod | $(TOOLS_DIR)
-	cd $(TOOLS_MOD_DIR) && $(GO) build -o $@ $(PACKAGE)
+	cd $(TOOLS_MOD_DIR) && GOWORK=off $(GO) build -o $@ $(PACKAGE)
 
-$(CROSSLINK): PACKAGE=github.com/flc1125/go-build-tools/crosslink
-$(GOTMPL): PACKAGE=github.com/flc1125/go-build-tools/gotmpl
-$(MULTIMOD): PACKAGE=github.com/flc1125/go-build-tools/multimod
 $(MISSPELL): PACKAGE=github.com/client9/misspell/cmd/misspell
 $(GOVULNCHECK): PACKAGE=golang.org/x/vuln/cmd/govulncheck
 
+$(CROSSLINK): $(CROSSLINK_GO_SOURCES) $(SHARED_GO_SOURCES) cmd/crosslink/go.mod cmd/crosslink/go.sum | $(TOOLS_DIR)
+	cd cmd/crosslink && $(GO) build -o $@ .
+
+$(GOTMPL): $(GOTMPL_GO_SOURCES) cmd/gotmpl/go.mod cmd/gotmpl/go.sum | $(TOOLS_DIR)
+	cd cmd/gotmpl && $(GO) build -o $@ .
+
+$(MULTIMOD): $(MULTIMOD_GO_SOURCES) $(SHARED_GO_SOURCES) cmd/multimod/go.mod cmd/multimod/go.sum | $(TOOLS_DIR)
+	cd cmd/multimod && $(GO) build -o $@ .
+
 $(GOLANGCI_LINT): $(TOOLS_MOD_DIR)/go.mod Makefile | $(TOOLS_DIR)
-	GOBIN=$(TOOLS_DIR) $(GO) install $(GOLANGCI_LINT_PACKAGE)@$(GOLANGCI_LINT_VERSION)
+	GOWORK=off GOBIN=$(TOOLS_DIR) $(GO) install $(GOLANGCI_LINT_PACKAGE)@$(GOLANGCI_LINT_VERSION)
 
 tools: $(CROSSLINK) $(GOTMPL) $(MULTIMOD) $(GOLANGCI_LINT) $(MISSPELL) $(GOVULNCHECK)
 
@@ -61,9 +71,9 @@ fmt-check:
 tidy:
 	@set -e; for dir in $(ALL_GO_MOD_DIRS); do \
 		echo "$(GO) mod tidy in $$dir"; \
-		(cd "$$dir" && $(GO) mod tidy); \
+		(cd "$$dir" && GOWORK=off $(GO) mod tidy); \
 	done
-	cd $(TOOLS_MOD_DIR) && $(GO) mod tidy
+	cd $(TOOLS_MOD_DIR) && GOWORK=off $(GO) mod tidy
 
 generate:
 	@set -e; for dir in $(ALL_GO_MOD_DIRS); do \
@@ -117,11 +127,8 @@ license-check:
 check-clean-work-tree:
 	git diff --exit-code
 
-crosslink: $(CROSSLINK)
-	$(CROSSLINK) --root=$(CURDIR) --prune
-
 gowork: $(CROSSLINK)
-	$(CROSSLINK) work --root=$(CURDIR) --go=1.26
+	$(CROSSLINK) work --root=$(CURDIR) --go=1.26.0 --skip=internal/tools/go.mod
 
 multimod-verify: $(MULTIMOD)
 	$(MULTIMOD) verify --versioning-file $(CURDIR)/versions.yaml

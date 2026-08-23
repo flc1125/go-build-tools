@@ -1,0 +1,11 @@
+// Modified by flc1125 for github.com/flc1125/go-build-tools.
+// SPDX-License-Identifier: Apache-2.0
+
+go 1.26.0
+
+use (
+	.
+	./cmd/crosslink
+	./cmd/gotmpl
+	./cmd/multimod
+)
