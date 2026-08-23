@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package shared // nolint:revive // keeping generic package name until a proper refactoring is done
+package shared
 
 import (
 	"errors"
@@ -34,7 +34,7 @@ func IsStableVersion(v string) bool {
 }
 
 // GetAllModuleSetNames returns the name of all module sets given in a versioningFile.
-func GetAllModuleSetNames(versioningFile string, repoRoot string) ([]string, error) {
+func GetAllModuleSetNames(versioningFile, repoRoot string) ([]string, error) {
 	modVersioning, err := NewModuleVersioning(versioningFile, repoRoot)
 	if err != nil {
 		return nil, fmt.Errorf("call failed to NewModuleVersioning: %w", err)

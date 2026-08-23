@@ -103,7 +103,7 @@ func openGoWork(rc RunConfig) (*modfile.WorkFile, error) {
 func writeGoWork(goWork *modfile.WorkFile, rc RunConfig) error {
 	goWorkPath := filepath.Join(rc.RootPath, "go.work")
 	content := modfile.Format(goWork.Syntax)
-	return os.WriteFile(goWorkPath, content, 0600)
+	return os.WriteFile(goWorkPath, content, 0o600)
 }
 
 // insertUses adds any missing intra-repository use statements.

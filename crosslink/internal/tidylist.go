@@ -36,6 +36,62 @@ type graphNode struct {
 	onStack bool
 }
 
+func readCircularAllowlist(filePath string) ([]string, error) {
+	if filePath == "" {
+		return nil, nil
+	}
+
+	file, err := os.Open(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open circular dependency allowlist: %w", err)
+	}
+
+	var allowCircular []string
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if line != "" && !strings.HasPrefix(line, "#") {
+			allowCircular = append(allowCircular, line)
+		}
+	}
+	if err = scanner.Err(); err != nil {
+		_ = file.Close()
+		return nil, fmt.Errorf("failed to read circular dependency allowlist: %w", err)
+	}
+	if err = file.Close(); err != nil {
+		return nil, fmt.Errorf("failed to close circular dependency allowlist: %w", err)
+	}
+
+	return allowCircular, nil
+}
+
+func validateTidySchedule(modsAlpha, modsTopo []string, graph map[string]*graphNode) error {
+	var queue [][]string
+	for _, modName := range modsAlpha {
+		queue = append(queue, []string{modName})
+	}
+	for len(queue) > 0 {
+		modPath := queue[0]
+		queue = queue[1:]
+		rest := modsTopo
+		for _, modName := range modPath {
+			i := slices.Index(rest, graph[modName].path)
+			if i == -1 {
+				return fmt.Errorf("tidy schedule is invalid; changes may not be propagated along path: %v", modPath)
+			}
+			rest = rest[i:]
+		}
+		for _, dep := range graph[modPath[0]].deps {
+			if !slices.Contains(modPath, dep) {
+				path2 := slices.Clone(modPath)
+				queue = append(queue, slices.Insert(path2, 0, dep))
+			}
+		}
+	}
+
+	return nil
+}
+
 // TidyList computes a list of modules to tidy.
 func TidyList(rc RunConfig, outputPath string) error {
 	rc.Logger.Debug("crosslink run config", zap.Any("run_config", rc))
@@ -45,33 +101,16 @@ func TidyList(rc RunConfig, outputPath string) error {
 		return fmt.Errorf("failed to identify root module: %w", err)
 	}
 
-	// Read circular dependency allowlist
-
-	var allowCircular []string
-	if rc.AllowCircular != "" {
-		var file *os.File
-		file, err = os.Open(rc.AllowCircular)
-		if err != nil {
-			return fmt.Errorf("failed to open circular dependency allowlist: %w", err)
-		}
-		defer file.Close()
-		scanner := bufio.NewScanner(file)
-		for scanner.Scan() {
-			line := scanner.Text()
-			if line != "" && !strings.HasPrefix(line, "#") {
-				allowCircular = append(allowCircular, line)
-			}
-		}
-		if err = scanner.Err(); err != nil {
-			return fmt.Errorf("failed to read circular dependency allowlist: %w", err)
-		}
+	allowCircular, err := readCircularAllowlist(rc.AllowCircular)
+	if err != nil {
+		return err
 	}
 
 	// Read intra-repository dependency graph
 
 	graph := make(map[string]*graphNode)
 	var modsAlpha []string
-	err = forGoModFiles(rc, func(filePath string, name string, file *modfile.File) error {
+	err = forGoModFiles(rc, func(filePath, name string, file *modfile.File) error {
 		if !strings.HasPrefix(name, rootModule) {
 			rc.Logger.Debug("ignoring module outside root module namespace", zap.String("mod_name", name))
 			return nil
@@ -184,36 +223,14 @@ func TidyList(rc RunConfig, outputPath string) error {
 	}
 
 	// Writing out schedule
-	err = os.WriteFile(outputPath, []byte(strings.Join(modsTopo, "\n")), 0600)
+	err = os.WriteFile(outputPath, []byte(strings.Join(modsTopo, "\n")), 0o600)
 	if err != nil {
 		return fmt.Errorf("failed to write tidy schedule file: %w", err)
 	}
 
 	if rc.Validate {
-		// Check validity of solution
-		// (iterate over possible paths and check they are all subsequences of modsTopo)
-
-		var queue [][]string
-		for _, modName := range modsAlpha {
-			queue = append(queue, []string{modName})
-		}
-		for len(queue) > 0 {
-			path := queue[0]
-			queue = queue[1:]
-			rest := modsTopo
-			for _, modName := range path {
-				i := slices.Index(rest, graph[modName].path)
-				if i == -1 {
-					return fmt.Errorf("tidy schedule is invalid; changes may not be propagated along path: %v", path)
-				}
-				rest = rest[i:]
-			}
-			for _, dep := range graph[path[0]].deps {
-				if !slices.Contains(path, dep) {
-					path2 := slices.Clone(path)
-					queue = append(queue, slices.Insert(path2, 0, dep))
-				}
-			}
+		if err = validateTidySchedule(modsAlpha, modsTopo, graph); err != nil {
+			return err
 		}
 	}
 

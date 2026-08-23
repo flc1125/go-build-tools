@@ -34,7 +34,7 @@ var TestAuthor = &object.Signature{
 
 // WriteTempFiles is a helper function to dynamically write files such as go.mod or version.go used for testing.
 func WriteTempFiles(modFiles map[string][]byte) error {
-	perm := os.FileMode(0700)
+	perm := os.FileMode(0o700)
 
 	for modFilePath, file := range modFiles {
 		path := filepath.Dir(modFilePath)

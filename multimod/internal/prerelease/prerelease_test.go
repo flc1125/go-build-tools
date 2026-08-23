@@ -632,8 +632,8 @@ func TestUpdateVersionGoFileErrs(t *testing.T) {
 	t.Run("ReadOnly", func(t *testing.T) {
 		path := filepath.Join(t.TempDir(), "version.go")
 
-		const readOnlyPerm = 0444
-		file, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY, readOnlyPerm) // nolint:gosec  // Var filepath okay in test.
+		const readOnlyPerm = 0o444
+		file, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY, readOnlyPerm) //nolint:gosec  // Var filepath okay in test.
 		require.NoError(t, err)
 		require.NoError(t, file.Close())
 

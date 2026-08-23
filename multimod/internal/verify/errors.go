@@ -43,7 +43,7 @@ type errMultipleSetSameVersionSlice struct {
 }
 
 func (e *errMultipleSetSameVersionSlice) Error() string {
-	var errorStringSlice []string
+	errorStringSlice := make([]string, 0, len(e.errs))
 	for _, err := range e.errs {
 		errorStringSlice = append(errorStringSlice, err.Error())
 	}

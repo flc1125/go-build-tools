@@ -2,11 +2,10 @@
 // Modified by flc1125 for github.com/flc1125/go-build-tools.
 // SPDX-License-Identifier: Apache-2.0
 
-package sync // nolint:revive // TODO: rename this internal package
+package sync
 
 import (
 	"bytes"
-	"context"
 	"errors"
 	"io"
 	"log"
@@ -172,9 +171,10 @@ func (f roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
 }
 
 type trackingBody struct {
-	reader  io.Reader
-	readErr error
-	closed  bool
+	reader   io.Reader
+	readErr  error
+	closeErr error
+	closed   bool
 }
 
 func (b *trackingBody) Read(p []byte) (int, error) {
@@ -186,11 +186,11 @@ func (b *trackingBody) Read(p []byte) (int, error) {
 
 func (b *trackingBody) Close() error {
 	b.closed = true
-	return nil
+	return b.closeErr
 }
 
 func TestCheckRetryHandlesNilResponse(t *testing.T) {
-	retry, err := checkRetry(context.Background(), nil, errors.New("network error"))
+	retry, err := checkRetry(t.Context(), nil, errors.New("network error"))
 
 	require.NoError(t, err)
 	assert.True(t, retry)
@@ -202,7 +202,7 @@ func TestParseVersionInfoClosesResponseBody(t *testing.T) {
 		return &http.Response{StatusCode: http.StatusOK, Body: body, Header: make(http.Header)}
 	})}}
 
-	version, err := s.parseVersionInfo(context.Background(), "example.com/module", "main")
+	version, err := s.parseVersionInfo(t.Context(), "example.com/module", "main")
 
 	require.NoError(t, err)
 	assert.Equal(t, "v1.2.3", version)
@@ -216,10 +216,24 @@ func TestParseVersionInfoReturnsReadError(t *testing.T) {
 		return &http.Response{StatusCode: http.StatusOK, Body: body, Header: make(http.Header)}
 	})}}
 
-	_, err := s.parseVersionInfo(context.Background(), "example.com/module", "main")
+	_, err := s.parseVersionInfo(t.Context(), "example.com/module", "main")
 
 	assert.ErrorIs(t, err, readErr)
 	assert.ErrorContains(t, err, "failed to read response")
+	assert.True(t, body.closed)
+}
+
+func TestParseVersionInfoReturnsCloseError(t *testing.T) {
+	closeErr := errors.New("close failed")
+	body := &trackingBody{reader: bytes.NewBufferString(`{"Version":"v1.2.3"}`), closeErr: closeErr}
+	s := sync{client: &http.Client{Transport: roundTripFunc(func(*http.Request) *http.Response {
+		return &http.Response{StatusCode: http.StatusOK, Body: body, Header: make(http.Header)}
+	})}}
+
+	_, err := s.parseVersionInfo(t.Context(), "example.com/module", "main")
+
+	assert.ErrorIs(t, err, closeErr)
+	assert.ErrorContains(t, err, "failed to close response")
 	assert.True(t, body.closed)
 }
 
@@ -358,7 +372,7 @@ func TestUpdateAllGoModFilesWithCommitHash(t *testing.T) {
 			s.client = tc.client
 			require.NoError(t, err)
 
-			err = s.updateAllGoModFiles(context.Background())
+			err = s.updateAllGoModFiles(t.Context())
 			if len(tc.expectedErr) == 0 {
 				require.NoError(t, err)
 			} else {
@@ -561,7 +575,7 @@ func TestUpdateAllGoModFiles(t *testing.T) {
 			)
 			require.NoError(t, err)
 
-			err = s.updateAllGoModFiles(context.Background())
+			err = s.updateAllGoModFiles(t.Context())
 			require.NoError(t, err)
 
 			for modFilePathSuffix, expectedByteOutput := range tc.expectedOutputModFiles {

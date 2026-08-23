@@ -58,7 +58,6 @@ func pruneReplace(rootModulePath string, module *moduleInfo, rc RunConfig) {
 	for _, rep := range modContents.Replace {
 		// skip excluded
 		if _, exists := rc.ExcludedPaths[rep.Old.Path]; exists {
-
 			rc.Logger.Debug("Excluded Module, ignoring prune", zap.String("excluded_mod", rep.Old.Path))
 
 			continue
@@ -77,8 +76,6 @@ func pruneReplace(rootModulePath string, module *moduleInfo, rc RunConfig) {
 					zap.String("module", modContents.Module.Mod.Path),
 					zap.String("replace_statement", rep.Old.Path+" => "+rep.New.Path))
 			}
-
 		}
 	}
-
 }

@@ -58,8 +58,10 @@ func gotmpl(bodyPath, jsonData, outPath string) error {
 		return fmt.Errorf("gotmpl: cannot create temporary output file: %w", err)
 	}
 	tmpPath := outFile.Name()
-	defer os.Remove(tmpPath)
-	defer outFile.Close()
+	defer func() {
+		_ = outFile.Close()
+		_ = os.Remove(tmpPath)
+	}()
 
 	perm := os.FileMode(0o644)
 	if info, statErr := os.Stat(outPath); statErr == nil {

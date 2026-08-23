@@ -2,7 +2,7 @@
 // Modified by flc1125 for github.com/flc1125/go-build-tools.
 // SPDX-License-Identifier: Apache-2.0
 
-package shared // nolint:revive // keeping generic package name until a proper refactoring is done
+package shared
 
 import (
 	"path/filepath"

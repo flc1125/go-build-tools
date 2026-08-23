@@ -27,7 +27,7 @@ import (
 func buildDependencyGraph(rc RunConfig, rootModulePath string) (map[string]*moduleInfo, error) {
 	moduleMap := make(map[string]*moduleInfo)
 
-	err := forGoModFiles(rc, func(_ string, modPath string, modContents *modfile.File) error {
+	err := forGoModFiles(rc, func(_, modPath string, modContents *modfile.File) error {
 		moduleMap[modPath] = newModuleInfo(*modContents)
 		return nil
 	})
@@ -81,7 +81,6 @@ func buildDependencyGraph(rc RunConfig, rootModulePath string) (map[string]*modu
 					}
 				}
 			}
-
 		}
 	}
 	return moduleMap, nil

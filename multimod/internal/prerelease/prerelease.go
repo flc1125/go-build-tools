@@ -22,7 +22,7 @@ import (
 )
 
 // Run runs the prerelease process.
-func Run(versioningFile string, moduleSetNames []string, skipModTidy bool, commitToDifferentBranch bool) error {
+func Run(versioningFile string, moduleSetNames []string, skipModTidy, commitToDifferentBranch bool) error {
 	return run(versioningFile, moduleSetNames, skipModTidy, commitToDifferentBranch)
 }
 
@@ -33,7 +33,7 @@ var (
 	commit           = commitChanges
 )
 
-func run(versioningFile string, moduleSetNames []string, skipModTidy bool, commitToDifferentBranch bool) error {
+func run(versioningFile string, moduleSetNames []string, skipModTidy, commitToDifferentBranch bool) error {
 	repoRoot, err := findRoot()
 	if err != nil {
 		return fmt.Errorf("unable to find repo root: %w", err)
@@ -172,7 +172,7 @@ var verRegex = regexp.MustCompile(shared.SemverRegexNumberOnly)
 
 // updateVersionGoFile updates all versions within the file at path to use the
 // new version number ver.
-func updateVersionGoFile(path string, ver string) error {
+func updateVersionGoFile(path, ver string) error {
 	// TODO: There is a potential improvement is to use an AST package rather than regex
 	// to perform replacement.
 	log.Printf("... Updating version references in %s to %s\n", path, ver)
@@ -181,18 +181,21 @@ func updateVersionGoFile(path string, ver string) error {
 	if err != nil {
 		return fmt.Errorf("error opening version.go file %v: %w", path, err)
 	}
-	defer file.Close()
 
-	data, err := io.ReadAll(file)
-	if err != nil {
-		return fmt.Errorf("error reading version.go file %v: %w", path, err)
+	data, readErr := io.ReadAll(file)
+	closeErr := file.Close()
+	if readErr != nil {
+		return fmt.Errorf("error reading version.go file %v: %w", path, readErr)
+	}
+	if closeErr != nil {
+		return fmt.Errorf("error closing version.go file %v: %w", path, closeErr)
 	}
 
 	v := strings.TrimPrefix(ver, "v")
 	data = verRegex.ReplaceAll(data, []byte(v))
 
 	// Overwrite filePath.
-	if err := os.WriteFile(path, data, 0600); err != nil {
+	if err := os.WriteFile(path, data, 0o600); err != nil {
 		return fmt.Errorf("error overwriting %s file: %w", path, err)
 	}
 
@@ -208,9 +211,10 @@ func (p prerelease) updateAllGoModFiles() error {
 		modFilePaths = append(modFilePaths, filePath)
 	}
 
-	var newModRefs []shared.ModuleRef
+	modSetPaths := p.ModSetPaths()
+	newModRefs := make([]shared.ModuleRef, 0, len(modSetPaths))
 	ver := p.ModSetVersion()
-	for _, mod := range p.ModSetPaths() {
+	for _, mod := range modSetPaths {
 		newModRefs = append(newModRefs, shared.ModuleRef{Path: mod, Version: ver})
 	}
 	if err := shared.UpdateGoModFiles(modFilePaths, newModRefs); err != nil {

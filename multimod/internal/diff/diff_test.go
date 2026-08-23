@@ -173,7 +173,7 @@ func (c MockClient) TagCommit(_ *git.Repository, _ string) (*object.Commit, erro
 	return nil, c.tagCommitErr
 }
 
-func (c MockClient) FilesChanged(_ *object.Commit, _ *object.Commit, _ string, _ string) ([]string, error) {
+func (c MockClient) FilesChanged(_, _ *object.Commit, _, _ string) ([]string, error) {
 	return c.files, nil
 }
 

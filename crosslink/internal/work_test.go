@@ -86,7 +86,7 @@ use ./testB`
 	assertGoWork(t, want, tmpRootDir)
 }
 
-func assertGoWork(t *testing.T, expected string, tmpRootDir string) {
+func assertGoWork(t *testing.T, expected, tmpRootDir string) {
 	t.Helper()
 
 	goWorkContent, err := os.ReadFile(filepath.Clean(filepath.Join(tmpRootDir, "go.work")))

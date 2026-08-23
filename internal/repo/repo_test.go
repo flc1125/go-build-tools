@@ -50,12 +50,13 @@ func setupGoMod(t *testing.T, dirs []string) string {
 
 	paths := append([]string{root}, prepend(root, dirs...)...)
 	for _, d := range paths {
-		require.NoError(t, os.MkdirAll(d, 0750))
+		require.NoError(t, os.MkdirAll(d, 0o750))
 		goMod := filepath.Join(d, "go.mod")
 		f, err := os.Create(filepath.Clean(goMod))
 		require.NoError(t, err)
 		modName := strings.Replace(d, root, "fake.multi.mod.project", 1)
-		fmt.Fprintf(f, "module %s\n", modName)
+		_, err = fmt.Fprintf(f, "module %s\n", modName)
+		require.NoError(t, err)
 		require.NoError(t, f.Close())
 	}
 	return root
@@ -65,7 +66,7 @@ func TestFindModules(t *testing.T) {
 	dirs := []string{"a", "a/b", "c"}
 	root := setupGoMod(t, dirs)
 	// Add a non-module dir.
-	require.NoError(t, os.MkdirAll(filepath.Join(root, "tools"), 0750))
+	require.NoError(t, os.MkdirAll(filepath.Join(root, "tools"), 0o750))
 
 	got, err := FindModules(root, nil)
 	require.NoError(t, err)
@@ -93,7 +94,7 @@ func TestFindModulesReturnsErrorForInvalidGoModFile(t *testing.T) {
 	root := t.TempDir()
 	goMod := filepath.Join(root, "go.mod")
 
-	require.NoError(t, os.WriteFile(filepath.Clean(goMod), []byte("invalid file format"), 0600))
+	require.NoError(t, os.WriteFile(filepath.Clean(goMod), []byte("invalid file format"), 0o600))
 
 	_, err := FindModules(root, nil)
 	errList := modfile.ErrorList{}
@@ -111,15 +112,15 @@ func setupDocker(t *testing.T, layout []*fPath) string {
 	root := t.TempDir()
 	for i, fp := range layout {
 		layout[i].dir = prepend(root, fp.dir)[0]
-
 	}
 	for _, path := range layout {
-		require.NoError(t, os.MkdirAll(path.dir, 0750))
+		require.NoError(t, os.MkdirAll(path.dir, 0o750))
 
 		dFile := filepath.Join(path.dir, path.file)
 		f, err := os.Create(filepath.Clean(dFile))
 		require.NoError(t, err)
-		fmt.Fprint(f, "FROM golang:1.20-alpine\n")
+		_, err = fmt.Fprint(f, "FROM golang:1.20-alpine\n")
+		require.NoError(t, err)
 		require.NoError(t, f.Close())
 	}
 	return root
@@ -134,7 +135,7 @@ func TestFindDockerfiles(t *testing.T) {
 	}
 	root := setupDocker(t, layout)
 	// Add an empty dir.
-	require.NoError(t, os.MkdirAll(filepath.Join(root, "tools"), 0750))
+	require.NoError(t, os.MkdirAll(filepath.Join(root, "tools"), 0o750))
 
 	got, err := FindFilePatternDirs(root, "*Dockerfile*", nil)
 	require.NoError(t, err)
@@ -159,7 +160,7 @@ func TestFindDockerfilesIgnore(t *testing.T) {
 	}
 	root := setupDocker(t, layout)
 	// Add an empty dir.
-	require.NoError(t, os.MkdirAll(filepath.Join(root, "tools"), 0750))
+	require.NoError(t, os.MkdirAll(filepath.Join(root, "tools"), 0o750))
 
 	got, err := FindFilePatternDirs(root, "*Dockerfile*", []string{"a/b", "aa/b?", "c"})
 	require.NoError(t, err)

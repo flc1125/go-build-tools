@@ -62,7 +62,6 @@ var configReset = func() {
 
 // Validate run config is valid after pre run.
 func TestPreRun(t *testing.T) {
-
 	validRootPath, err := filepath.Abs("../../")
 	require.NoError(t, err, "could not parse expected root path")
 	validProdLogger, err := zap.NewProduction()
