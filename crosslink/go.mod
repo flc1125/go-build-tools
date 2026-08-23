@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 module github.com/flc1125/go-build-tools/crosslink
 
-go 1.25.0
+go 1.26.0
 
 require (
 	github.com/flc1125/go-build-tools v0.1.0
