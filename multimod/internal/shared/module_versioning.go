@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package shared // nolint:revive // keeping generic package name until a proper refactoring is done
+package shared
 
 import (
 	"fmt"
@@ -28,7 +28,7 @@ type ModuleVersioning struct {
 
 // NewModuleVersioningWithIgnoreExcluded returns a ModuleVersioning struct from a versioning file and repo root and supports
 // ignoring the excluded-modules configuration.
-func NewModuleVersioningWithIgnoreExcluded(versioningFilename string, repoRoot string, ignoreExcluded bool) (ModuleVersioning, error) {
+func NewModuleVersioningWithIgnoreExcluded(versioningFilename, repoRoot string, ignoreExcluded bool) (ModuleVersioning, error) {
 	repoRoot, err := filepath.Abs(repoRoot)
 	if err != nil {
 		return ModuleVersioning{}, fmt.Errorf("could not get absolute path of repo root: %w", err)
@@ -61,6 +61,6 @@ func NewModuleVersioningWithIgnoreExcluded(versioningFilename string, repoRoot s
 }
 
 // NewModuleVersioning returns a ModuleVersioning struct from a versioning file and repo root.
-func NewModuleVersioning(versioningFilename string, repoRoot string) (ModuleVersioning, error) {
+func NewModuleVersioning(versioningFilename, repoRoot string) (ModuleVersioning, error) {
 	return NewModuleVersioningWithIgnoreExcluded(versioningFilename, repoRoot, false)
 }

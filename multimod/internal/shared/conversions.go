@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package shared // nolint:revive // keeping generic package name until a proper refactoring is done
+package shared
 
 import (
 	"fmt"
@@ -26,7 +26,7 @@ const RepoRootTag = ModuleTagName("REPOROOTTAG")
 // combineModuleTagNamesAndVersion combines a slice of ModuleTagNames with the version number and returns
 // the new full module tags.
 func combineModuleTagNamesAndVersion(modTagNames []ModuleTagName, version string) []string {
-	var modFullTags []string
+	modFullTags := make([]string, 0, len(modTagNames))
 	for _, modTagName := range modTagNames {
 		var newFullTag string
 		if modTagName == RepoRootTag {

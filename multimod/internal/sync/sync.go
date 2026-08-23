@@ -2,7 +2,7 @@
 // Modified by flc1125 for github.com/flc1125/go-build-tools.
 // SPDX-License-Identifier: Apache-2.0
 
-package sync // nolint:revive // TODO: rename this internal package
+package sync
 
 import (
 	"context"
@@ -23,7 +23,7 @@ import (
 )
 
 // Run runs the synchronization process.
-func Run(ctx context.Context, myVersioningFile string, otherVersioningFile string, otherRepoRoot string, otherModuleSetNames []string, otherVersionCommit string, allModuleSets bool, skipModTidy bool) error {
+func Run(ctx context.Context, myVersioningFile, otherVersioningFile, otherRepoRoot string, otherModuleSetNames []string, otherVersionCommit string, allModuleSets, skipModTidy bool) error {
 	myRepoRoot, err := repo.FindRoot()
 	if err != nil {
 		return fmt.Errorf("unable to find repo root: %w", err)
@@ -95,7 +95,7 @@ type sync struct {
 	client                   *http.Client
 }
 
-func newSync(myVersioningFilename, otherVersioningFilename, modSetToUpdate, myRepoRoot string, otherVersionCommit string) (sync, error) {
+func newSync(myVersioningFilename, otherVersioningFilename, modSetToUpdate, myRepoRoot, otherVersionCommit string) (sync, error) {
 	otherModuleSet, err := shared.GetModuleSet(modSetToUpdate, otherVersioningFilename)
 	if err != nil {
 		return sync{}, fmt.Errorf("error creating new sync struct: %w", err)
@@ -144,11 +144,14 @@ func (s sync) parseVersionInfo(ctx context.Context, pkg, tag string) (string, er
 	if err != nil {
 		return "", fmt.Errorf("request failed for package %q at version %q: %w", pkg, tag, err)
 	}
-	defer res.Body.Close()
 
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		return "", fmt.Errorf("failed to read response for package %q at version %q: %w", pkg, tag, err)
+	body, readErr := io.ReadAll(res.Body)
+	closeErr := res.Body.Close()
+	if readErr != nil {
+		return "", fmt.Errorf("failed to read response for package %q at version %q: %w", pkg, tag, readErr)
+	}
+	if closeErr != nil {
+		return "", fmt.Errorf("failed to close response for package %q at version %q: %w", pkg, tag, closeErr)
 	}
 
 	if res.StatusCode >= 400 {

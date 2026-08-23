@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package shared // nolint:revive // keeping generic package name until a proper refactoring is done
+package shared
 
 import (
 	"errors"
@@ -25,7 +25,7 @@ import (
 )
 
 // CommitChangesToNewBranch creates a new branch, commits to it, and returns to the original worktree.
-func CommitChangesToNewBranch(branchName string, commitMessage string, repo *git.Repository, customAuthor *object.Signature) (plumbing.Hash, error) {
+func CommitChangesToNewBranch(branchName, commitMessage string, repo *git.Repository, customAuthor *object.Signature) (plumbing.Hash, error) {
 	// save reference to current head in storage
 	origRef, err := repo.Head()
 	if err != nil {

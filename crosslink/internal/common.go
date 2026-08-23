@@ -48,7 +48,7 @@ func writeModule(module *moduleInfo) error {
 		return fmt.Errorf("failed to format go.mod file: %w", err)
 	}
 	// write our updated go.mod file
-	err = os.WriteFile(modContents.Syntax.Name, gomodFile, 0600)
+	err = os.WriteFile(modContents.Syntax.Name, gomodFile, 0o600)
 	if err != nil {
 		return fmt.Errorf("failed to write go.mod file: %w", err)
 	}
@@ -77,7 +77,7 @@ func forGoModules(logger *zap.Logger, rootPath string, fn func(path string) erro
 	})
 }
 
-func forGoModFiles(rc RunConfig, fn func(modPath string, modName string, modFile *modfile.File) error) error {
+func forGoModFiles(rc RunConfig, fn func(modPath, modName string, modFile *modfile.File) error) error {
 	return forGoModules(rc.Logger, rc.RootPath, func(path string) error {
 		if _, ok := rc.SkippedPaths[path]; ok {
 			rc.Logger.Debug("skipping", zap.String("path", path))

@@ -23,7 +23,7 @@ import (
 type Client interface {
 	HeadCommit(r *git.Repository) (*object.Commit, error)
 	TagCommit(r *git.Repository, tag string) (*object.Commit, error)
-	FilesChanged(headCommit *object.Commit, tagCommit *object.Commit, prefix string, suffix string) ([]string, error)
+	FilesChanged(headCommit, tagCommit *object.Commit, prefix, suffix string) ([]string, error)
 }
 
 // GitClient handles interactions with git.
@@ -53,7 +53,7 @@ func (g GitClient) TagCommit(r *git.Repository, tag string) (*object.Commit, err
 }
 
 // FilesChanged returns a list of files that have changed between two commits.
-func (g GitClient) FilesChanged(headCommit *object.Commit, tagCommit *object.Commit, prefix string, suffix string) ([]string, error) {
+func (g GitClient) FilesChanged(headCommit, tagCommit *object.Commit, prefix, suffix string) ([]string, error) {
 	changedFiles := []string{}
 	p, err := headCommit.Patch(tagCommit)
 	if err != nil {
@@ -91,7 +91,7 @@ func normalizeTag(tagName shared.ModuleTagName, ver string) string {
 }
 
 // HasChanged checks if the files in the module set have changed since the last release.
-func HasChanged(repoRoot string, versioningFile string, ver string, modset string) ([]string, error) {
+func HasChanged(repoRoot, versioningFile, ver, modset string) ([]string, error) {
 	changedFiles := []string{}
 	ver = normalizeVersion(ver)
 
@@ -122,7 +122,7 @@ func HasChanged(repoRoot string, versioningFile string, ver string, modset strin
 	return filesChanged(r, modset, ver, tagNames, GitClient{})
 }
 
-func filesChanged(r *git.Repository, modset string, ver string, tagNames []shared.ModuleTagName, client Client) ([]string, error) {
+func filesChanged(r *git.Repository, modset, ver string, tagNames []shared.ModuleTagName, client Client) ([]string, error) {
 	changedFiles := []string{}
 	headCommit, err := client.HeadCommit(r)
 	if err != nil {

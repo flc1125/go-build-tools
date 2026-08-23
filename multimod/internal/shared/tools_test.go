@@ -2,7 +2,7 @@
 // Modified by flc1125 for github.com/flc1125/go-build-tools.
 // SPDX-License-Identifier: Apache-2.0
 
-package shared // nolint:revive // keeping generic package name until a proper refactoring is done
+package shared
 
 import (
 	"os"
@@ -76,7 +76,7 @@ func TestUpdateGoModVersions(t *testing.T) {
 
 	require.NoError(t, sharedtest.WriteTempFiles(modFiles), "could not create go mod file tree")
 
-	var modFilePaths []ModuleFilePath
+	modFilePaths := make([]ModuleFilePath, 0, len(modFiles))
 	for modFilePath := range modFiles {
 		modFilePaths = append(modFilePaths, ModuleFilePath(modFilePath))
 	}

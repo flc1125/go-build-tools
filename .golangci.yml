@@ -1,91 +1,81 @@
 # Modified by flc1125 for github.com/flc1125/go-build-tools.
 # SPDX-License-Identifier: Apache-2.0
 version: "2"
-run:
-  concurrency: 4
-  modules-download-mode: readonly
-  issues-exit-code: 1
-  tests: true
-  allow-parallel-runners: true
+
 linters:
+  default: none
+
   enable:
+    - bodyclose
     - copyloopvar
-    - depguard
-    - errorlint
+    - dogsled
+    - durationcheck
+    - errcheck
     - gocritic
-    - gosec
+    - gocyclo
+    - gomoddirectives
+    - govet
+    - ineffassign
     - misspell
+    - modernize
+    - nolintlint
+    - prealloc
     - revive
+    - staticcheck
     - unconvert
     - unparam
+    - unused
     - usetesting
+    - wastedassign
+    - whitespace
   settings:
-    depguard:
+    revive:
+      # see: https://github.com/mgechev/revive/blob/HEAD/RULES_DESCRIPTIONS.md
       rules:
-        main:
-          deny:
-            - pkg: sync/atomic
-              desc: Use go.uber.org/atomic instead of sync/atomic
-            - pkg: github.com/pkg/errors
-              desc: Use 'errors' or 'fmt' instead of github.com/pkg/errors
-        non-tests:
-          files:
-            - '!$test'
-            - '!**/*test/*.go'
-          deny:
-            - pkg: testing
-            - pkg: github.com/stretchr/testify
-    govet:
-      disable:
-        - fieldalignment
-      enable-all: true
-      settings:
-        printf:
-          funcs:
-            - (github.com/golangci/golangci-lint/pkg/logutils.Log).Infof
-            - (github.com/golangci/golangci-lint/pkg/logutils.Log).Warnf
-            - (github.com/golangci/golangci-lint/pkg/logutils.Log).Errorf
-            - (github.com/golangci/golangci-lint/pkg/logutils.Log).Fatalf
-    misspell:
-      locale: US
-      ignore-rules:
-        - cancelled
-        - metre
-        - meter
-        - metres
-        - kilometre
-        - kilometres
+        - name: context-as-argument
+          arguments:
+            - allowTypesBefore: '*testing.T,*testing.B,*testing.F'
+        - name: duplicated-imports
+        - name: early-return
+        - name: error-naming
+        - name: errorf
+        - name: package-comments
+          disabled: true
+        - name: time-equal
+        - name: unnecessary-stmt
+        - name: use-any
+        - name: useless-break
+        - name: var-declaration
+        - name: var-naming
+          arguments: [[], [], [skipPackageNameChecks: true]]
+        - name: waitgroup-by-value
+    gomoddirectives:
+      replace-local: true
+      toolchain-forbidden: true
+      go-version-pattern: '^1\.26\.0$'
+    nolintlint:
+      require-specific: true
+    usetesting:
+      context-background: true
+      context-todo: true
+    staticcheck:
+      checks:
+        - all
+        - '-QF1012' # https://staticcheck.dev/docs/checks#QF1012
+        - '-ST1000' # https://staticcheck.dev/docs/checks#ST1000
+        - '-ST1020' # https://staticcheck.dev/docs/checks#ST1020
+        - '-ST1021' # https://staticcheck.dev/docs/checks#ST1021
+        - '-ST1022' # https://staticcheck.dev/docs/checks#ST1022
   exclusions:
-    generated: lax
-    presets:
-      - std-error-handling
-    rules:
-      - linters:
-          - gosec
-        text: 'G404:'
-      - linters:
-          - gosec
-        text: 'G402:'
-      - linters:
-          - gosec
-        text: 'G112:'
     paths:
-      - third_party$
-      - builtin$
-      - examples$
+      - .gocache
+
 formatters:
   enable:
-    - gofmt
+    - gofumpt
     - goimports
   settings:
-    gofmt:
-      simplify: true
-    goimports:
-      local-prefixes:
-        - github.com/flc1125/go-build-tools
-  exclusions:
-    generated: lax
-    paths:
-      - third_party$
-      - builtin$
-      - examples$
+    gofumpt:
+      extra:
+        group-params: true
+      module-path: github.com/flc1125/go-build-tools
