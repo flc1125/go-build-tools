@@ -8,7 +8,7 @@ require (
 	github.com/flc1125/go-build-tools/gotmpl v0.1.0
 	github.com/flc1125/go-build-tools/multimod v0.1.0
 	github.com/golangci/golangci-lint/v2 v2.14.0
-	golang.org/x/vuln v1.7.0
+	golang.org/x/vuln v1.8.0
 )
 
 require (
