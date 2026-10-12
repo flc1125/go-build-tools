@@ -30,6 +30,25 @@ Generates files from Go templates and JSON data.
 The modules require Go 1.26.0 or newer. Use the latest patch release of Go 1.26
 or 1.27 for development and security checks.
 
+Install the tools from any directory:
+
+```sh
+go install github.com/flc1125/go-build-tools/crosslink@latest
+go install github.com/flc1125/go-build-tools/multimod@latest
+go install github.com/flc1125/go-build-tools/gotmpl@latest
+```
+
+Use a specific version, such as `@v0.1.0`, instead of `@latest` to pin an
+available release. Go installs the executables in `GOBIN`, or in the first
+`GOPATH` entry's `bin` directory when `GOBIN` is empty.
+
+Add the installation directory to your `PATH`.
+
+### Source installation
+
+Use a workspace when you want to install the local source, including local
+changes to the shared internal packages.
+
 1. Clone this repository:
 
    ```sh
@@ -42,26 +61,22 @@ or 1.27 for development and security checks.
    cd go-build-tools
    ```
 
-3. Install the tools from their module directories:
+3. Create the local workspace:
 
    ```sh
-   (cd crosslink && go install .)
-   (cd multimod && go install .)
-   (cd gotmpl && go install .)
+   make gowork
    ```
 
-Go installs the executables in `GOBIN`, or in the first `GOPATH` entry's `bin`
-directory when `GOBIN` is empty. Add the installation directory to your `PATH`.
+4. Install the tools from the repository root:
 
-`crosslink` and `multimod` use local `replace` directives to reference the root
-module. Go rejects these directives when you install with a version suffix
-such as `@latest`. Install these tools from a clone instead.
+   ```sh
+   go install github.com/flc1125/go-build-tools/crosslink
+   go install github.com/flc1125/go-build-tools/multimod
+   go install github.com/flc1125/go-build-tools/gotmpl
+   ```
 
-`gotmpl` has no local `replace` directives. You can also install it directly:
-
-```sh
-go install github.com/flc1125/go-build-tools/gotmpl@latest
-```
+Do not add a version suffix for source installation. A versioned install uses
+published source instead of your local changes.
 
 ## Development
 
@@ -73,6 +88,7 @@ make precommit
 ```
 
 This command can change source files, documentation, and dependency files.
+It also creates or updates the ignored `go.work` file for local dependencies.
 CI checks the latest patch releases of Go 1.26 and 1.27 on Linux and Windows.
 [`internal/tools/go.mod`](./internal/tools/go.mod) specifies the development
 tool versions.

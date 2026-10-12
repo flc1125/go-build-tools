@@ -8,17 +8,13 @@ modules. It adds `replace` directives, removes unused replacements, manages
 
 ## Installation
 
-From the root of a local clone of this repository, run:
-
 ```sh
-(cd crosslink && go install .)
+go install github.com/flc1125/go-build-tools/crosslink@latest
 ```
 
-This module uses a local `replace` directive for the root module. Install it
-from a clone, not with `go install ...@latest`.
-
-See the [repository installation guide](../README.md#installation) for the
-clone command and Go requirements.
+Run this command from any directory. See the
+[repository installation guide](../README.md#installation) for Go requirements
+and source installation with a workspace.
 
 ## Before you run crosslink
 
@@ -167,7 +163,7 @@ Run this shell example from the selected root directory to apply the order:
 
 ```sh
 while IFS= read -r dir || [ -n "$dir" ]; do
-  (cd "$dir" && go mod tidy) || exit
+  go -C "$dir" mod tidy || exit
 done < tidy-order.txt
 ```
 

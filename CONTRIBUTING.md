@@ -23,16 +23,23 @@ make precommit
 
 The command performs these steps:
 
-1. Format Go source files.
-2. Run `go mod tidy` in every module, including `internal/tools`.
-3. Run `go generate` in the public modules.
-4. Run static checks.
-5. Scan for reachable vulnerabilities.
-6. Run unit tests.
-7. Check the module sets in `versions.yaml`.
+1. Create or update the local Go workspace.
+2. Format Go source files.
+3. Run `go mod tidy` in every module, including `internal/tools`.
+4. Run `go generate` in the public modules.
+5. Run static checks.
+6. Scan for reachable vulnerabilities.
+7. Run unit tests.
+8. Check the module sets in `versions.yaml`.
+9. Check versioned installation of the CLI modules.
 
 The command can change source files, documentation, and dependency files.
 Review these changes before you commit them.
+
+`go.work` and `go.work.sum` stay outside Git. The workspace uses local shared
+packages without adding `replace` directives to the public CLI modules.
+Dependency tidying runs with `GOWORK=off` to keep each module independently
+resolvable.
 
 To run only tests:
 
@@ -55,8 +62,8 @@ make ci
 ```
 
 This command checks formatting, generation, static analysis, vulnerabilities,
-unit tests, and license headers. It also fails if tracked files differ from
-the Git index after the checks.
+unit tests, license headers, and versioned CLI installation. It also fails if
+tracked files differ from the Git index after the checks.
 
 CI runs race tests and module-set checks separately:
 
@@ -64,6 +71,26 @@ CI runs race tests and module-set checks separately:
 make test-race
 make multimod-verify
 ```
+
+### Installation checks
+
+To run only the versioned installation check:
+
+```sh
+make install-check
+```
+
+The check builds a temporary file proxy from the tracked CLI files in your
+working tree. It runs `go install` with `@latest` outside the repository.
+It disables workspaces and uses a fresh module cache for the installations.
+
+The check can reuse downloaded dependencies through the existing download
+cache. Other dependencies use your configured Go proxy. Published dependencies
+keep the configured checksum settings. Only the local fixture modules skip
+checksum database checks.
+
+The fixture versions are local. This check does not publish modules, create
+release tags, or change your installed tools.
 
 ## Pull requests
 

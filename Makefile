@@ -18,7 +18,7 @@ MULTIMOD := $(TOOLS_DIR)/multimod
 GOLANGCI_LINT := $(TOOLS_DIR)/golangci-lint
 GOLANGCI_LINT_MODULE := github.com/golangci/golangci-lint/v2
 GOLANGCI_LINT_PACKAGE := $(GOLANGCI_LINT_MODULE)/cmd/golangci-lint
-GOLANGCI_LINT_VERSION := $(shell cd $(TOOLS_MOD_DIR) && $(GO) list -m -f '{{.Version}}' $(GOLANGCI_LINT_MODULE))
+GOLANGCI_LINT_VERSION := $(shell GOWORK=off $(GO) -C $(TOOLS_MOD_DIR) list -m -f '{{.Version}}' $(GOLANGCI_LINT_MODULE))
 MISSPELL := $(TOOLS_DIR)/misspell
 GOVULNCHECK := $(TOOLS_DIR)/govulncheck
 COMMIT ?= HEAD
@@ -28,17 +28,17 @@ REMOTE ?= origin
 
 .PHONY: precommit ci fmt fmt-check tidy generate build vet lint golangci-lint \
 	misspell govulncheck test test-race \
-	license-check check-clean-work-tree tools crosslink gowork \
+	license-check check-clean-work-tree install-check tools crosslink gowork \
 	multimod-verify multimod-prerelease print-tags create-tags push-tags
 
-precommit: fmt tidy generate vet lint test multimod-verify
-ci: fmt-check generate vet lint test license-check check-clean-work-tree
+precommit: gowork fmt tidy generate vet lint test multimod-verify install-check
+ci: gowork fmt-check generate vet lint test license-check install-check check-clean-work-tree
 
 $(TOOLS_DIR):
 	mkdir -p $@
 
 $(TOOLS_DIR)/%: $(TOOLS_MOD_DIR)/go.mod | $(TOOLS_DIR)
-	cd $(TOOLS_MOD_DIR) && $(GO) build -o $@ $(PACKAGE)
+	GOWORK=off $(GO) -C $(TOOLS_MOD_DIR) build -o $@ $(PACKAGE)
 
 $(CROSSLINK): PACKAGE=github.com/flc1125/go-build-tools/crosslink
 $(GOTMPL): PACKAGE=github.com/flc1125/go-build-tools/gotmpl
@@ -61,26 +61,26 @@ fmt-check:
 tidy:
 	@set -e; for dir in $(ALL_GO_MOD_DIRS); do \
 		echo "$(GO) mod tidy in $$dir"; \
-		(cd "$$dir" && $(GO) mod tidy); \
+		GOWORK=off $(GO) -C "$$dir" mod tidy; \
 	done
-	cd $(TOOLS_MOD_DIR) && $(GO) mod tidy
+	GOWORK=off $(GO) -C $(TOOLS_MOD_DIR) mod tidy
 
-generate:
+generate: gowork
 	@set -e; for dir in $(ALL_GO_MOD_DIRS); do \
 		echo "$(GO) generate in $$dir"; \
-		(cd "$$dir" && $(GO) generate ./...); \
+		$(GO) -C "$$dir" generate ./...; \
 	done
 
 build: generate
 	@set -e; for dir in $(ALL_GO_MOD_DIRS); do \
 		echo "$(GO) build in $$dir"; \
-		(cd "$$dir" && $(GO) build ./...); \
+		$(GO) -C "$$dir" build ./...; \
 	done
 
-vet:
+vet: gowork
 	@set -e; for dir in $(ALL_GO_MOD_DIRS); do \
 		echo "$(GO) vet in $$dir"; \
-		(cd "$$dir" && $(GO) vet ./...); \
+		$(GO) -C "$$dir" vet ./...; \
 	done
 
 lint: misspell golangci-lint govulncheck
@@ -94,16 +94,16 @@ golangci-lint: generate | $(GOLANGCI_LINT)
 misspell: | $(MISSPELL)
 	$(MISSPELL) -w $(ALL_DOCS)
 
-govulncheck: | $(GOVULNCHECK)
+govulncheck: gowork | $(GOVULNCHECK)
 	@set -e; for dir in $(ALL_GO_MOD_DIRS); do \
 		echo "govulncheck in $$dir"; \
 		(cd "$$dir" && $(GOVULNCHECK) ./...); \
 	done
 
-test:
+test: gowork
 	@set -e; for dir in $(ALL_GO_MOD_DIRS); do \
 		echo "$(GO) test in $$dir"; \
-		(cd "$$dir" && $(GO) test -timeout $(TIMEOUT)s $(ARGS) ./...); \
+		$(GO) -C "$$dir" test -timeout $(TIMEOUT)s $(ARGS) ./...; \
 	done
 
 test-race:
@@ -117,11 +117,15 @@ license-check:
 check-clean-work-tree:
 	git diff --exit-code
 
+install-check:
+	$(GO) run ./internal/installcheck -go "$(GO)"
+
 crosslink: $(CROSSLINK)
-	$(CROSSLINK) --root=$(CURDIR) --prune
+	$(CROSSLINK) --root=$(CURDIR) --prune --skip=crosslink/go.mod,gotmpl/go.mod,multimod/go.mod,internal/tools/go.mod
 
 gowork: $(CROSSLINK)
-	$(CROSSLINK) work --root=$(CURDIR) --go=1.26
+	$(CROSSLINK) work --root=$(CURDIR) --go=1.26.0
+	GOWORK=$(CURDIR)/go.work $(GO) work use $(ALL_GO_MOD_DIRS) $(TOOLS_MOD_DIR)
 
 multimod-verify: $(MULTIMOD)
 	$(MULTIMOD) verify --versioning-file $(CURDIR)/versions.yaml

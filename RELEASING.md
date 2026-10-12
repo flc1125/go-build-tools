@@ -1,7 +1,10 @@
 # Release process
 
-This repository releases all public modules together in the `tools` module set
-from `versions.yaml`.
+This repository releases `crosslink`, `gotmpl`, and `multimod` together in the
+`tools` module set from `versions.yaml`.
+
+The root module contains shared internal packages. It uses published commit
+versions and does not share the CLI release version.
 
 ## Requirements
 
@@ -17,6 +20,25 @@ agent. Do not store private keys in this repository.
 
 Run all commands below from the repository root. Replace placeholders such as
 `<new-version>` and `<release-commit>` with the intended values.
+
+## Shared dependencies
+
+`crosslink` and `multimod` pin a published root-module commit. Their `go.mod`
+files must not contain local `replace` directives. Development uses a workspace
+for local shared packages.
+
+If a CLI change needs newer shared code, merge the shared package changes
+first. Update the dependencies in the CLI change branch:
+
+```sh
+GOWORK=off go -C crosslink get github.com/flc1125/go-build-tools@<shared-commit>
+GOWORK=off go -C multimod get github.com/flc1125/go-build-tools@<shared-commit>
+make tidy
+make install-check
+```
+
+Commit these dependency updates before you run `multimod prerelease`.
+The root module does not need a release tag for a commit version.
 
 ## Prepare
 
