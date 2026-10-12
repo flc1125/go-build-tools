@@ -127,7 +127,7 @@ multimod-verify: $(MULTIMOD)
 	$(MULTIMOD) verify --versioning-file $(CURDIR)/versions.yaml
 
 multimod-prerelease: multimod-verify $(MULTIMOD)
-	$(MULTIMOD) prerelease --module-set-name tools --versioning-file $(CURDIR)/versions.yaml
+	$(MULTIMOD) prerelease --module-set-names tools --versioning-file $(CURDIR)/versions.yaml
 
 print-tags: multimod-verify $(MULTIMOD)
 	$(MULTIMOD) tag --module-set-name tools --preview-tags
