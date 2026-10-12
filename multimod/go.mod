@@ -5,7 +5,7 @@ module github.com/flc1125/go-build-tools/multimod
 go 1.26.0
 
 require (
-	github.com/flc1125/go-build-tools v0.1.0
+	github.com/flc1125/go-build-tools v0.0.0-20261012010516-98036a8bb3c4
 	github.com/go-git/go-git/v5 v5.19.2
 	github.com/hashicorp/go-retryablehttp v0.7.8
 	github.com/spf13/cobra v1.10.2
@@ -50,5 +50,3 @@ require (
 	golang.org/x/text v0.39.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )
-
-replace github.com/flc1125/go-build-tools => ../

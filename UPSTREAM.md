@@ -22,5 +22,18 @@ The `multimod` dependency on `github.com/go-git/go-git/v5` is updated from
 v5.18.0 to v5.19.2, together with the required transitive dependencies, to
 address vulnerabilities reported after the upstream v0.30.0 release.
 
+## Installation and local development
+
+The public CLI modules do not contain local `replace` directives. This permits
+versioned installation with `go install`. `crosslink` and `multimod` pin a
+published root-module commit for their shared internal packages.
+
+The CLI modules share the `tools` release version. The root module stays
+outside that release set. A local workspace replaces the root module during
+development without changing the published CLI dependencies.
+
+This changes dependency packaging and development automation, not the tools'
+command-line behavior or configuration formats.
+
 Original OpenTelemetry copyright and license headers are retained. Files whose
 Go import paths were adapted carry an additional modification notice.

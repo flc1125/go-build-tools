@@ -1,47 +1,186 @@
 # Release process
 
-All public modules are released together using `versions.yaml`.
+This repository releases `crosslink`, `gotmpl`, and `multimod` together in the
+`tools` module set from `versions.yaml`.
+
+The root module contains shared internal packages. It uses published commit
+versions and does not share the CLI release version.
+
+## Requirements
+
+Use the development requirements in [CONTRIBUTING.md](./CONTRIBUTING.md#requirements).
+You also need permission to push tags to the release remote.
+
+`make create-tags` runs `git tag -a -s` to create signed tags. Configure Git's
+signing backend and signing key before you create tags. Git uses settings such
+as `gpg.format` and `user.signingkey`.
+
+For OpenPGP signing, install GnuPG. Make your private key available to its
+agent. Do not store private keys in this repository.
+
+Run all commands below from the repository root. Replace placeholders such as
+`<new-version>` and `<release-commit>` with the intended values.
+
+## Shared dependencies
+
+`crosslink` and `multimod` pin a published root-module commit. Their `go.mod`
+files must not contain local `replace` directives. Development uses a workspace
+for local shared packages.
+
+If a CLI change needs newer shared code, merge the shared package changes
+first. Update the dependencies in the CLI change branch:
+
+```sh
+GOWORK=off go -C crosslink get github.com/flc1125/go-build-tools@<shared-commit>
+GOWORK=off go -C multimod get github.com/flc1125/go-build-tools@<shared-commit>
+make tidy
+make install-check
+```
+
+Commit these dependency updates before you run `multimod prerelease`.
+The root module does not need a release tag for a commit version.
 
 ## Prepare
 
-1. Update the version for the `tools` module set in `versions.yaml`.
-2. Verify the module set:
+1. Switch to `main`:
+
+   ```sh
+   git switch main
+   ```
+
+2. Update `main` from the release remote:
+
+   ```sh
+   git pull --ff-only origin main
+   ```
+
+3. Create a release preparation branch:
+
+   ```sh
+   git switch -c release/prepare-<new-version>
+   ```
+
+   This branch keeps version preparation commits separate from your local
+   `main` branch.
+
+4. Update the `tools` version in `versions.yaml`.
+
+   Choose a version without existing release tags.
+
+5. Check the module set:
 
    ```sh
    make multimod-verify
    ```
 
-3. Prepare the release changes:
+6. Commit the version configuration change:
+
+   ```sh
+   git add versions.yaml
+   git commit -m "chore(release): prepare <new-version>"
+   ```
+
+7. Check that the working tree is clean:
+
+   ```sh
+   git status --short
+   ```
+
+   This command must produce no output. `multimod prerelease` rejects
+   uncommitted changes.
+
+8. Prepare the release changes:
 
    ```sh
    make multimod-prerelease
    ```
 
-4. Review the generated branch and changes, run `make precommit`, and merge the
-   release commit through the normal review process.
+   This command creates and commits the release changes on a new branch.
+   On success, it returns to the original branch.
+
+9. Switch to the generated release branch:
+
+   ```sh
+   git switch prerelease_tools_<new-version>
+   ```
+
+   Use the version from `versions.yaml`, including its `v` prefix.
+
+10. Review the release changes:
+
+    ```sh
+    git diff main
+    ```
+
+11. Run local checks on the release branch:
+
+    ```sh
+    make precommit
+    ```
+
+12. Commit any additional fixes from the review or checks.
+
+13. Open a pull request to merge the release branch into `main`.
+
+14. Merge the pull request through the normal review process.
 
 ## Tag
 
-After the release commit is merged, preview the tags. This command is read-only
-and does not create tags:
+1. Switch to `main` after the release pull request merges:
 
-```sh
-make print-tags
-```
+   ```sh
+   git switch main
+   ```
 
-Create the signed tags locally on the release commit:
+2. Update `main` from the release remote:
 
-```sh
-make create-tags COMMIT=<release-commit>
-```
+   ```sh
+   git pull --ff-only origin main
+   ```
 
-Review the created tags and confirm that they point to the intended commit.
-Then push the existing tags explicitly:
+3. Check that `versions.yaml` contains the version from the merged release commit.
 
-```sh
-make push-tags COMMIT=<release-commit> REMOTE=origin
-```
+4. Preview the complete tag list:
+
+   ```sh
+   make print-tags
+   ```
+
+   This command does not create or delete tags.
+
+5. Create signed tags on the merged release commit:
+
+   ```sh
+   make create-tags COMMIT=<release-commit>
+   ```
+
+6. Check the signature of each tag:
+
+   ```sh
+   git tag -v <tag>
+   ```
+
+7. Check that each tag points to the intended release commit:
+
+   ```sh
+   git rev-list -n 1 <tag>
+   ```
+
+8. Push the existing tags to the release remote:
+
+   ```sh
+   make push-tags COMMIT=<release-commit> REMOTE=origin
+   ```
 
 `push-tags` refuses to push if any expected tag is missing locally or points to
-a different commit. Go module tags are effectively immutable after consumers
-observe them, so always verify the commit and complete tag list before pushing.
+a different commit. It checks commit targets, not tag signatures.
+
+Do not reuse a published tag name for a different commit. Consumers and Go
+module proxies can retain the original version.
+
+For local tagging mistakes, see the [tag deletion cautions](./multimod/README.md#delete-local-tags).
+
+## Release notes
+
+Create the GitHub releases for the published tags. Include the changes from the
+release pull request in the release notes.
