@@ -1,179 +1,204 @@
-# Go MultiMod Releaser
+# multimod
 
 > Derived from OpenTelemetry `opentelemetry-go-build-tools` v0.30.0.
 
-This Go Cobra app adds versioning support for repos containing multiple Go
-Modules. Specifically, this app allows for repo maintainers to specify versions
-for sets of Go Modules, so that different sets may be versioned separately.
+`multimod` checks version configuration and prepares releases for repositories
+with multiple Go modules. A module set groups modules that share one version.
+Different sets can use different versions.
 
-## Specify Module Sets and Versions
+This document describes the commands for a target repository. For releases of
+`go-build-tools` itself, use [RELEASING.md](../RELEASING.md).
 
-First, ensure that you check out a branch from which you will begin your
-commits. To specify sets of modules whose versions will be incremented in
-lockstep, the `versions.yaml` file must be manually edited between versions.
-When creating a or editing a `versions.yaml` file...
+## Installation
 
-* For each module set, give it a name and specify its version and modules it
-  includes.
-* Specify the Go module's import path (rather than its file path)
-* Specify modules which should be excluded from versioning (excluded modules
-  still get version update for its dependencies).
-* Ensure versions are consistent with the semver versioning requirements.
-* Update version numbers or module groupings as needed for new releases.
-
-An example versioning file is given in [the versions-example.yaml
-file](./docs/versions-example.yaml).
-
-## Creating the app binary
-
-TODO: switch to automatically pulling newest version of `multimod` app binary.
-
-This section describes the current process used for building the Cobra app
-binary, but the process will be updated soon to automatically fetch the most
-recent version of the app.
-
-To build the binary, simply use the following commands:
+From the root of a local clone of this repository, run:
 
 ```sh
-# from the go-build-tools repository root
-cd multimod
-go build -o multimod main.go
+(cd multimod && go install .)
 ```
 
-## Verify Module Versioning
+This module uses a local `replace` directive for the root module. Install it
+from a clone, not with `go install ...@latest`.
 
-Once changes have been completed to the `versions.yaml` file, and the `multimod`
-file is within the target repo, verify that the versioning is correct by running
-the `verify` subcommand:
+See the [repository installation guide](../README.md#installation) for the
+clone command and Go requirements.
+
+## Version configuration
+
+Create `versions.yaml` in the target Git repository's root directory. Run
+`multimod` commands from that repository.
+
+```yaml
+module-sets:
+  app:
+    version: v0.2.0
+    modules:
+      - example.com/project
+      - example.com/project/cli
+excluded-modules:
+  - example.com/project/internal/tools
+```
+
+Follow these rules:
+
+- Give each set a name, a valid semantic version, and a list of module import paths.
+- Use import paths, not filesystem paths, in `modules` and `excluded-modules`.
+- Put each module in exactly one set unless you exclude it.
+- Excluded modules do not receive release tags, but their dependencies can receive version updates.
+- Update set versions or module groupings when you prepare a release.
+
+The [extended example](./docs/versions-example.yaml) also shows custom version
+file references. All commands accept `--versioning-file` to select another
+configuration file. The default is `versions.yaml` in the target repository's
+root directory.
+
+## Check version configuration
 
 ```sh
-# within the target repo
-./multimod verify
+multimod verify
 ```
 
-* The script is called with the following parameters:
-  * **versioning-file (optional):** Path to versioning file that contains
-    definitions of all module sets. If unspecified, defaults to
-    \<RepoRoot\>/versions.yaml.
-* The following verifications are performed:
-  * `verifyAllModulesInSet` checks that every module (as defined by a `go.mod`
-      file) is contained in exactly one module set.
-  * `verifyVersions` checks that module set version conform to semver semantics
-      and checks that no more than one module set exists for any given non-zero
-      major version.
-  * `verifyDependencies` checks if any stable modules depend on unstable
-    modules.
-    * The stability of a given module is defined by its version in the
-      `version.yaml` file (versions `v1` and above are stable, `v0` is
-      unstable).
-    * A dependency is defined by the "require" section of the module's `go.mod`
-      file (in the current branch).
-    * A warning will be printed for each dependency of a stable module on an
-      unstable module.
+The command checks these conditions:
 
-## Prepare a prerelease commit
+1. Each module belongs to exactly one set, unless you exclude it.
+2. Every configured module exists in the repository.
+3. Each set has a valid semantic version.
+4. No two sets share the same nonzero major version.
 
-Update `go.mod` for all modules to depend on the specified module set's new
-release using the prerelease subcommand. A new "prerelease" branch will be
-created and keeps local changes from your current branch.
+It also warns when a stable module depends on an unstable module in the
+repository. These warnings do not cause the command to fail.
 
-1. Run the pre-release script. It creates a branch
-   `prerelease_<module_set_name>_<new_version>` that will contain all release
-   changes.
+For this check, a major version of `v1` or higher is stable. A major version
+of `v0` is unstable. Dependencies come from the `require` directives in
+`go.mod` files.
 
-    ```sh
-    ./multimod prerelease --module-set-name <name>
-    ```
+## Prepare a release branch
 
-    * The script is called with the following parameters:
-        * **module-set-name (required):** Name of module set whose version is
-          being changed. Must be listed in the module set versioning YAML.
-        * **versioning-file (optional):** Path to versioning file that contains
-          definitions of all module sets. If unspecified, defaults to
-          (RepoRoot)/versions.yaml.
-        * **skip-go-mod-tidy (boolean flag):** Specify this flag to skip the 'go
-          mod tidy' step. To be used for debugging purposes. Should not be
-          skipped during actual releases.
+`prerelease` requires a clean working tree. Commit your version configuration
+changes before you run it.
 
-2. Verify the changes.
+1. Create a preparation branch from your intended release base:
 
-    ```sh
-    git diff main
-    ```
+   ```sh
+   git switch -c release/prepare-<new-version>
+   ```
 
-   This should have changed the version for all modules listed in `go.mod` files
-   to be `<new version>`.
+2. Update the intended module set's version in `versions.yaml`.
 
-   Include the curated changes for the release in the pull request description.
-   For example, any linting steps would be done here.
+3. Check the version configuration:
 
-## Tag the new release commit
+   ```sh
+   multimod verify
+   ```
 
-Once the Pull Request with all the version changes has been approved and merged,
-it is time to tag the merged commit.
+4. Commit the configuration change:
 
-Make sure that you have pulled all changes from the upstream remote so that the
-commit will be found in your currently checked out branch.
+   ```sh
+   git add versions.yaml
+   git commit -m "chore(release): prepare <new-version>"
+   ```
 
-1. Run the tag subcommand using the `<commit-hash>` of the commit on the main
-   branch for the merged Pull Request. In other words, once a Pull Request has
-   been merged, the commit hash of the single commit containing all merged
-   pre-release changes should be used. The tag can be given as its abbreviation,
-   in which case the script will attempt to find and print the full SHA1 hash.
+5. Check that `git status --short` produces no output.
 
-    ```sh
-    ./multimod tag --module-set-name <name> --commit-hash <hash>
-    ```
+6. Prepare the module set:
 
-    **Note** Provide the `--print-tags` flag if you would like multimod to
-    print tags after tagging operations are done. This output will use a
-    new-line delimiter.
+   ```sh
+   multimod prerelease --module-set-names <set-name>
+   ```
 
-    ```sh
-    ./multimod tag --module-set-name <name> --commit-hash <hash> --print-tags
-    ```
+   The command updates dependency versions and existing version reference
+   files. It runs `go mod tidy` and commits the changes on a new branch.
+   On success, it returns to the original branch.
 
-    Using `--print-tags` allows `multimod tag` to be used in conjunction with tools
-    such as `xargs` to automatically push tags. Grepping the release version number
-    is required since multimod can output non tag related information to standard
-    out.
+7. Switch to the generated branch:
 
-    ```sh
-    ./multimod tag --module-set-name $MOD_SET_NAME \
-    --commit-hash $MOD_SET_COMMIT \
-    --print-tags \
-    | grep $RELEASE_VER \
-    | xargs -L 1 git push $REMOTE_NAME
-    ```
+   ```sh
+   git switch prerelease_<set-name>_<new-version>
+   ```
 
-    To preview the complete tag list without creating any tags, use
-    `--preview-tags`. A commit hash is not required in preview mode.
+   Include the `v` prefix in `<new-version>`.
 
-    ```sh
-    multimod tag --module-set-name <name> --preview-tags
-    ```
+8. Review the release changes against the intended release base.
 
-2. Tags can then be pushed to a remote repository of your choice.
+9. Run the target repository's checks on the release branch.
 
-    ```sh
-    git push upstream <new tag 1>
-    git push upstream <new tag 2>
-    ...
-    ```
+10. Submit the release pull request.
 
-In the case that you made a mistake in creating Git Tags (e.g. you used the
-wrong commit hash), you can run the following command to delete all of a
-specified module set's tags for the version specified in `versions.yaml`. This
-command will not allow you to delete tags that already exist in the upstream
-remote.
+11. Merge the pull request through the normal review process.
+
+### Prerelease flags
+
+| Flag | Behavior |
+| --- | --- |
+| `--module-set-names` | Optional comma-separated list of set names. Defaults to all sets. |
+| `--commit-to-different-branch` | Defaults to `true`. Use `false` to commit on the current branch. |
+| `--skip-go-mod-tidy` | Skips dependency tidying. Use only for debugging, not for releases. |
+
+`prerelease` uses the plural `--module-set-names`. The `tag` command uses the
+singular `--module-set-name`.
+
+## Preview and create release tags
+
+Update your local release base after the release pull request merges.
+Check that `versions.yaml` contains the intended release version.
+
+Preview the tags without creating or deleting them:
 
 ```sh
-./multimod tag --module-set-name <name> --delete-module-set-tags
+multimod tag --module-set-name <set-name> --preview-tags
 ```
 
-## Release
+Preview mode does not require `--commit-hash`. Tags for submodules include the
+module directory prefix, such as `cli/v0.2.0`.
 
-Finally, create a Release for the new `<new tag>` on GitHub. The release body
-should include the curated changes from the release pull request.
+Create signed tags on the merged release commit:
 
-The standard releasing process for the repo should then be followed.
+```sh
+multimod tag --module-set-name <set-name> --commit-hash <release-commit> --print-tags
+```
+
+The command runs `git tag -a -s`. Configure Git's signing backend and signing
+key before you run this command. See the
+[signing requirements](../RELEASING.md#requirements).
+
+`--print-tags` writes one tag name per line to standard output. Progress
+messages go to standard error. The command does not push tags.
+
+1. Check each tag's signature with `git tag -v <tag>`.
+2. Check its commit with `git rev-list -n 1 <tag>`.
+3. Push each intended tag explicitly:
+
+   ```sh
+   git push origin <tag>
+   ```
+
+Do not reuse a published tag name for a different commit. Consumers and Go
+module proxies can retain the original version.
+
+## Delete local tags
+
+**Caution:** This command deletes local tags for the configured set and
+version. It does not check whether those tags exist on a remote.
+
+Check the release remote before you delete tags. For example:
+
+```sh
+git ls-remote --tags origin
+```
+
+Do not delete or recreate tags that consumers can already access.
+
+To undo an unpublished local tagging mistake:
+
+```sh
+multimod tag --module-set-name <set-name> --commit-hash <tagged-commit> --delete-module-set-tags
+```
+
+Provide `--commit-hash` in deletion mode. Every tag in the configured set
+must exist as an annotated tag and point to that commit. The command only
+deletes local tags. It does not delete remote tags.
+
+## Release notes
+
+Create the GitHub releases after you push the tags. Include the changes from
+the release pull request in the release notes.
