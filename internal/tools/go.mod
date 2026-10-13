@@ -79,7 +79,7 @@ require (
 	github.com/fatih/color v1.19.0 // indirect
 	github.com/fatih/structtag v1.2.0 // indirect
 	github.com/firefart/nonamedreturns v1.0.8 // indirect
-	github.com/flc1125/go-build-tools v0.0.0-20261012010516-98036a8bb3c4 // indirect
+	github.com/flc1125/go-build-tools v0.0.0-20261013154226-bf0b259bf910 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/fzipp/gocyclo v0.6.0 // indirect
 	github.com/ghostiam/protogetter v1.0.1 // indirect

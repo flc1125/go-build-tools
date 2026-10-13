@@ -5,7 +5,7 @@ module github.com/flc1125/go-build-tools/crosslink
 go 1.26.0
 
 require (
-	github.com/flc1125/go-build-tools v0.0.0-20261012010516-98036a8bb3c4
+	github.com/flc1125/go-build-tools v0.0.0-20261013154226-bf0b259bf910
 	github.com/google/go-cmp v0.7.0
 	github.com/otiai10/copy v1.14.1
 	github.com/spf13/cobra v1.10.2
