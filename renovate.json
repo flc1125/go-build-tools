@@ -6,7 +6,7 @@
   ],
   "separateMajorMinor": true,
   "postUpdateOptions": [
-    "gomodTidy"
+    "gomodTidyAll"
   ],
   "constraints": {
     "go": "1.26.0"
