@@ -3,10 +3,7 @@
 Reusable build tools for Go projects.
 
 This repository provides `crosslink`, `multimod`, and `gotmpl` under the
-`github.com/flc1125/go-build-tools` module path. Their initial implementation
-is based on OpenTelemetry's
-[`opentelemetry-go-build-tools`](https://github.com/open-telemetry/opentelemetry-go-build-tools)
-[`v0.30.0`](https://github.com/open-telemetry/opentelemetry-go-build-tools/releases/tag/v0.30.0).
+`github.com/flc1125/go-build-tools` module path.
 
 ## Tools
 
@@ -80,8 +77,8 @@ published source instead of your local changes.
 
 ## Development
 
-The repository keeps the upstream multi-module layout. Run local checks from
-the repository root:
+This is a multi-module Go repository. Run local checks from the repository
+root:
 
 ```sh
 make precommit
@@ -95,13 +92,11 @@ tool versions.
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md) for development commands.
 See [RELEASING.md](./RELEASING.md) for this repository's release process.
-See [UPSTREAM.md](./UPSTREAM.md) for provenance and the compatibility baseline.
 
 ## License
 
-This project is licensed under the Apache License 2.0. Portions of this
-repository are derived from `open-telemetry/opentelemetry-go-build-tools`,
-Copyright The OpenTelemetry Authors, and are used under the Apache License 2.0.
+This project is licensed under the [Apache License 2.0](./LICENSE).
 
-See [LICENSE](./LICENSE), [NOTICE](./NOTICE), and [UPSTREAM.md](./UPSTREAM.md)
-for the license terms, attribution, and detailed provenance.
+The tools are derived from OpenTelemetry's Go build tools, Copyright The
+OpenTelemetry Authors. See [NOTICE](./NOTICE) for attribution and
+[UPSTREAM.md](./UPSTREAM.md) for provenance.

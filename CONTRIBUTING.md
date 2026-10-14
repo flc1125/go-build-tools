@@ -94,8 +94,7 @@ release tags, or change your installed tools.
 
 ## Pull requests
 
-Describe any intentional difference from the upstream compatibility baseline
-in the pull request description. See [UPSTREAM.md](./UPSTREAM.md) for that
-baseline.
+Describe the purpose of the change and its effect on command-line behavior,
+configuration formats, or installation. Include the checks you ran.
 
 Use [RELEASING.md](./RELEASING.md) when you prepare a release of this repository.

@@ -1,7 +1,5 @@
 # multimod
 
-> Derived from OpenTelemetry `opentelemetry-go-build-tools` v0.30.0.
-
 `multimod` checks version configuration and prepares releases for repositories
 with multiple Go modules. A module set groups modules that share one version.
 Different sets can use different versions.
