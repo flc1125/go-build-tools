@@ -22,8 +22,8 @@ github.com/emirpasic/gods v1.18.1 h1:FXtiHYKDGKCW2KzwZKx0iC0PQmdlorYgdFG9jPXJ1Bc
 github.com/emirpasic/gods v1.18.1/go.mod h1:8tpGGwCnJ5H4r6BWwaV6OrWmMoPhUl5jm/FMNAnJvWQ=
 github.com/fatih/color v1.16.0 h1:zmkK9Ngbjj+K0yRhTVONQh1p/HknKYSlNT+vZCzyokM=
 github.com/fatih/color v1.16.0/go.mod h1:fL2Sau1YI5c0pdGEVCbKQbLXB6edEj1ZgiY4NijnWvE=
-github.com/flc1125/go-build-tools v0.0.0-20261014005626-4aeacaced375 h1:1srowXCCecQftyAThC6wA2yY1GAS5IxzNu/xpLsLEAA=
-github.com/flc1125/go-build-tools v0.0.0-20261014005626-4aeacaced375/go.mod h1:q7EB86EANXXWkp06zJhoCBvVDNcOfNl0lvMIFKuEAG4=
+github.com/flc1125/go-build-tools v0.0.0-20261014011701-5f61681ce9fd h1:gGKfqWRYlApZGnY0+4YT2s6H3576Y50ILZkjdq0ZdyA=
+github.com/flc1125/go-build-tools v0.0.0-20261014011701-5f61681ce9fd/go.mod h1:q7EB86EANXXWkp06zJhoCBvVDNcOfNl0lvMIFKuEAG4=
 github.com/frankban/quicktest v1.14.6 h1:7Xjx+VpznH+oBnejlPUj8oUpdxnVs4f8XU8WnHkI4W8=
 github.com/frankban/quicktest v1.14.6/go.mod h1:4ptaffx2x8+WTWXmUCuVU6aPUX1/Mz7zb5vbUoiM6w0=
 github.com/fsnotify/fsnotify v1.9.0 h1:2Ml+OJNzbYCTzsxtv8vKSFD9PbJjmhYF14k/jKC7S9k=
