@@ -5,7 +5,7 @@ module github.com/flc1125/go-build-tools/multimod
 go 1.26.0
 
 require (
-	github.com/flc1125/go-build-tools v0.0.0-20261013154226-bf0b259bf910
+	github.com/flc1125/go-build-tools v0.0.0-20261014005626-4aeacaced375
 	github.com/go-git/go-git/v5 v5.19.3
 	github.com/hashicorp/go-retryablehttp v0.7.8
 	github.com/spf13/cobra v1.10.2
