@@ -5,9 +5,8 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-The three CLI modules share each release version. Version links use the
-`crosslink` release tag; `gotmpl` and `multimod` have matching release tags.
-The shared root module uses published commit versions.
+The root module and the three CLI modules share each release version. Version
+links use the root tag; each CLI module has a matching module-prefixed tag.
 
 ## [Unreleased]
 
@@ -22,6 +21,7 @@ Initial release of `go-build-tools`.
 - `multimod` checks module version configuration, prepares release branches,
   and creates release tags for module sets.
 - `gotmpl` generates files from Go templates and JSON data.
+- Shared internal packages released with the CLI modules under the same version.
 - Workspace-based local development without local `replace` directives in
   published CLI modules.
 - Automated dependency updates through Renovate.
@@ -43,5 +43,5 @@ Initial release of `go-build-tools`.
 - Skip the Unix file-mode assertion in `gotmpl` tests on Windows.
 - Keep dependent module metadata tidy after automated dependency updates.
 
-[unreleased]: https://github.com/flc1125/go-build-tools/compare/crosslink/v0.1.0...HEAD
-[0.1.0]: https://github.com/flc1125/go-build-tools/releases/tag/crosslink/v0.1.0
+[unreleased]: https://github.com/flc1125/go-build-tools/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/flc1125/go-build-tools/releases/tag/v0.1.0

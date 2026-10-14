@@ -126,7 +126,7 @@ changes before you run it.
 | --- | --- |
 | `--module-set-names` | Optional comma-separated list of set names. Defaults to all sets. |
 | `--commit-to-different-branch` | Defaults to `true`. Use `false` to commit on the current branch. |
-| `--skip-go-mod-tidy` | Skips dependency tidying. Use only for debugging, not for releases. |
+| `--skip-go-mod-tidy` | Skips dependency tidying. Run a separate tidy check before tagging. |
 
 `prerelease` uses the plural `--module-set-names`. The `tag` command uses the
 singular `--module-set-name`.

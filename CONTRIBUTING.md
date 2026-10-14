@@ -38,8 +38,12 @@ Review these changes before you commit them.
 
 `go.work` and `go.work.sum` stay outside Git. The workspace uses local shared
 packages without adding `replace` directives to the public CLI modules.
-Dependency tidying runs with `GOWORK=off` to keep each module independently
-resolvable.
+
+`make tidy` runs with `GOWORK=off` and temporary module files. CLI dependencies
+on the root module resolve to local shared packages during tidying, even before
+the new root-module version is published. Existing replacements are preserved.
+The temporary root replacement is removed before dependency files are written
+back. Local replacement paths and fixture checksums are not committed.
 
 To run only tests:
 
@@ -80,8 +84,10 @@ To run only the versioned installation check:
 make install-check
 ```
 
-The check builds a temporary file proxy from the tracked CLI files in your
-working tree. It runs `go install` with `@latest` outside the repository.
+The check builds a temporary file proxy from the tracked root-module and CLI
+files in your working tree. The root fixture uses the version required by the
+CLI modules, so the check also works before release tags exist. The check runs
+`go install` with `@latest` outside the repository.
 It disables workspaces and uses a fresh module cache for the installations.
 
 The check can reuse downloaded dependencies through the existing download
@@ -89,7 +95,7 @@ cache. Other dependencies use your configured Go proxy. Published dependencies
 keep the configured checksum settings. Only the local fixture modules skip
 checksum database checks.
 
-The fixture versions are local. This check does not publish modules, create
+The fixtures are local. This check does not publish modules, create
 release tags, or change your installed tools.
 
 ## Pull requests

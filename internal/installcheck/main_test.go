@@ -49,7 +49,7 @@ func TestWriteModule(t *testing.T) {
 	}
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "untracked.txt"), []byte("not a release file"), 0o600))
 	proxy := t.TempDir()
-	got, err := writeModule(root, "crosslink", proxy)
+	got, err := writeModule(root, "crosslink", proxy, fixtureVersion)
 	require.NoError(t, err)
 	require.Equal(t, path, got)
 	escaped, err := module.EscapePath(path)
@@ -79,7 +79,7 @@ func TestWriteModule(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte(tt.gomod), 0o600))
 			proxy := t.TempDir()
-			_, err := writeModule(root, "crosslink", proxy)
+			_, err := writeModule(root, "crosslink", proxy, fixtureVersion)
 			require.NoError(t, err)
 			tmp := t.TempDir()
 			env, err := installEnvironment("go", tmp, proxy, []string{path})
@@ -96,4 +96,65 @@ func TestWriteModule(t *testing.T) {
 			require.NoError(t, err, "%s", output)
 		})
 	}
+}
+
+func TestCreateProxyWithUnpublishedRoot(t *testing.T) {
+	root := t.TempDir()
+	modulePath := "example.com/BuildTools"
+	files := map[string]string{
+		"go.mod":                    "module " + modulePath + "\n\ngo 1.26.0\n",
+		"internal/shared/shared.go": "package shared\n\nfunc Print() {}\n",
+	}
+	for _, dir := range []string{"crosslink", "gotmpl", "multimod"} {
+		gomod := "module " + modulePath + "/" + dir + "\n\ngo 1.26.0\n"
+		main := "package main\n\nfunc main() {}\n"
+		if dir != "gotmpl" {
+			gomod += "\nrequire " + modulePath + " v0.1.0\n"
+			main = "package main\n\nimport \"example.com/BuildTools/internal/shared\"\n\nfunc main() { shared.Print() }\n"
+		}
+		files[dir+"/go.mod"] = gomod
+		files[dir+"/main.go"] = main
+	}
+	for name, data := range files {
+		path := filepath.Join(root, name)
+		require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o755))
+		require.NoError(t, os.WriteFile(path, []byte(data), 0o600))
+	}
+	for _, args := range [][]string{{"init", "-q"}, {"add", "."}} {
+		cmd := exec.CommandContext(t.Context(), "git", args...)
+		cmd.Dir = root
+		output, err := cmd.CombinedOutput()
+		require.NoError(t, err, "%s", output)
+	}
+	proxy := t.TempDir()
+	paths, err := createProxy(root, proxy)
+	require.NoError(t, err)
+	require.Equal(t, modulePath, paths[0])
+	require.Len(t, paths, 4)
+	escaped, err := module.EscapePath(modulePath)
+	require.NoError(t, err)
+	reader, err := zip.OpenReader(filepath.Join(proxy, escaped, "@v", "v0.1.0.zip"))
+	require.NoError(t, err)
+	defer func() { require.NoError(t, reader.Close()) }()
+	names := make([]string, 0, len(reader.File))
+	for _, file := range reader.File {
+		names = append(names, strings.TrimPrefix(file.Name, modulePath+"@v0.1.0/"))
+	}
+	require.ElementsMatch(t, []string{"go.mod", "internal/shared/shared.go"}, names)
+	tmp := t.TempDir()
+	env, err := installEnvironment("go", tmp, proxy, paths)
+	require.NoError(t, err)
+	env = append(env, "GOPROXY="+fileURL(proxy))
+	for _, path := range paths[1:] {
+		cmd := exec.CommandContext(t.Context(), "go", "install", "-modcacherw", path+"@latest")
+		cmd.Dir = tmp
+		cmd.Env = env
+		output, installErr := cmd.CombinedOutput()
+		require.NoError(t, installErr, "%s", output)
+	}
+	path := filepath.Join(root, "multimod", "go.mod")
+	data := strings.ReplaceAll(files["multimod/go.mod"], "v0.1.0", "v0.2.0")
+	require.NoError(t, os.WriteFile(path, []byte(data), 0o600))
+	_, err = createProxy(root, t.TempDir())
+	require.ErrorContains(t, err, "root module versions do not match")
 }
