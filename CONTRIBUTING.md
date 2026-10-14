@@ -103,4 +103,8 @@ release tags, or change your installed tools.
 Describe the purpose of the change and its effect on command-line behavior,
 configuration formats, or installation. Include the checks you ran.
 
+Record notable changes in the `Unreleased` section of [CHANGELOG.md](./CHANGELOG.md).
+Add the relevant pull request links to each entry after the pull request is
+open. Use a commit link for a change made without a pull request.
+
 Use [RELEASING.md](./RELEASING.md) when you prepare a release of this repository.
