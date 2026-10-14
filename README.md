@@ -5,6 +5,8 @@ Reusable build tools for Go projects.
 This repository provides `crosslink`, `multimod`, and `gotmpl` under the
 `github.com/flc1125/go-build-tools` module path.
 
+See [CHANGELOG.md](./CHANGELOG.md) for release notes.
+
 ## Tools
 
 ### [`crosslink`](./crosslink/README.md)
