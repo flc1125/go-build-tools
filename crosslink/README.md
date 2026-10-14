@@ -1,7 +1,5 @@
 # crosslink
 
-> Derived from OpenTelemetry `opentelemetry-go-build-tools` v0.30.0.
-
 `crosslink` manages local dependencies in repositories with multiple Go
 modules. It adds `replace` directives, removes unused replacements, manages
 `go.work`, and generates an order for `go mod tidy`.
@@ -205,10 +203,3 @@ To overwrite replacements without verbose output:
 ```sh
 crosslink --root=. --overwrite --verbose=false
 ```
-
-## Background
-
-OpenTelemetry developed the original tool for its multi-module repositories.
-See [opentelemetry-go](https://github.com/open-telemetry/opentelemetry-go) and
-[opentelemetry-collector-contrib](https://github.com/open-telemetry/opentelemetry-collector-contrib)
-for examples.

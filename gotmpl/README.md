@@ -1,7 +1,5 @@
 # gotmpl
 
-> Derived from OpenTelemetry `opentelemetry-go-build-tools` v0.30.0.
-
 `gotmpl` generates files from Go
 [templates](https://pkg.go.dev/text/template) and JSON data.
 
