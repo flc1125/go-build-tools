@@ -1,10 +1,11 @@
 # Release process
 
-This repository releases `crosslink`, `gotmpl`, and `multimod` together in the
-`tools` module set from `versions.yaml`.
+This repository releases the root module, `crosslink`, `gotmpl`, and `multimod`
+together in the `tools` module set from `versions.yaml`.
 
-The root module contains shared internal packages. It uses published commit
-versions and does not share the CLI release version.
+The root module contains shared internal packages. It shares the CLI release
+version. Each release has a root tag, such as `v0.1.0`, and matching CLI tags:
+`crosslink/v0.1.0`, `gotmpl/v0.1.0`, and `multimod/v0.1.0`.
 
 ## Requirements
 
@@ -23,22 +24,18 @@ Run all commands below from the repository root. Replace placeholders such as
 
 ## Shared dependencies
 
-`crosslink` and `multimod` pin a published root-module commit. Their `go.mod`
-files must not contain local `replace` directives. Development uses a workspace
-for local shared packages.
+`crosslink` and `multimod` require the root module at the shared release version.
+`multimod prerelease` updates these requirements together with other references
+to modules in the `tools` set.
 
-If a CLI change needs newer shared code, merge the shared package changes
-first. Update the dependencies in the CLI change branch:
+Public CLI modules must not contain local `replace` directives. Development
+uses a workspace for local shared packages. `make tidy` uses temporary module
+files to resolve the local root module before its release tag exists, without
+adding replacements to the published CLI files.
 
-```sh
-GOWORK=off go -C crosslink get github.com/flc1125/go-build-tools@<shared-commit>
-GOWORK=off go -C multimod get github.com/flc1125/go-build-tools@<shared-commit>
-make tidy
-make install-check
-```
-
-Commit these dependency updates before you run `multimod prerelease`.
-The root module does not need a release tag for a commit version.
+`make install-check` validates the root module and CLI sources through a local
+file proxy with workspaces disabled. No release tags need to exist for this
+check. See [CONTRIBUTING.md](./CONTRIBUTING.md#installation-checks) for details.
 
 ## Prepare
 
@@ -67,6 +64,9 @@ The root module does not need a release tag for a commit version.
 
    Choose a version without existing release tags.
 
+   Add a dated release entry to [CHANGELOG.md](./CHANGELOG.md). Move the relevant
+   `Unreleased` entries into it and update the version links to use the root tag.
+
 5. Check the module set:
 
    ```sh
@@ -76,7 +76,7 @@ The root module does not need a release tag for a commit version.
 6. Commit the version configuration change:
 
    ```sh
-   git add versions.yaml
+   git add versions.yaml CHANGELOG.md
    git commit -m "chore(release): prepare <new-version>"
    ```
 
@@ -95,8 +95,11 @@ The root module does not need a release tag for a commit version.
    make multimod-prerelease
    ```
 
-   This command creates and commits the release changes on a new branch.
-   On success, it returns to the original branch.
+    This command creates and commits the release changes on a new branch.
+    On success, it returns to the original branch.
+
+    Dependency tidying is deferred to `make precommit` on the generated branch.
+    The release's root-module version does not need to be published first.
 
 9. Switch to the generated release branch:
 
@@ -146,7 +149,8 @@ The root module does not need a release tag for a commit version.
    make print-tags
    ```
 
-   This command does not create or delete tags.
+    This command previews the root tag and all three CLI tags. It does not
+    create or delete tags.
 
 5. Create signed tags on the merged release commit:
 
@@ -182,5 +186,5 @@ For local tagging mistakes, see the [tag deletion cautions](./multimod/README.md
 
 ## Release notes
 
-Create the GitHub releases for the published tags. Include the changes from the
-release pull request in the release notes.
+Create the GitHub releases for the published tags. Use the corresponding version
+entry in [CHANGELOG.md](./CHANGELOG.md) as the release notes.

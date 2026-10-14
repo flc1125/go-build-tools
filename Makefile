@@ -59,11 +59,7 @@ fmt-check:
 	if [ -n "$$files" ]; then echo "Unformatted Go files:"; echo "$$files"; exit 1; fi
 
 tidy:
-	@set -e; for dir in $(ALL_GO_MOD_DIRS); do \
-		echo "$(GO) mod tidy in $$dir"; \
-		GOWORK=off $(GO) -C "$$dir" mod tidy; \
-	done
-	GOWORK=off $(GO) -C $(TOOLS_MOD_DIR) mod tidy
+	$(GO) run ./internal/modtidy -go "$(GO)" $(ALL_GO_MOD_DIRS) $(TOOLS_MOD_DIR)
 
 generate: gowork
 	@set -e; for dir in $(ALL_GO_MOD_DIRS); do \
@@ -131,7 +127,7 @@ multimod-verify: $(MULTIMOD)
 	$(MULTIMOD) verify --versioning-file $(CURDIR)/versions.yaml
 
 multimod-prerelease: multimod-verify $(MULTIMOD)
-	$(MULTIMOD) prerelease --module-set-names tools --versioning-file $(CURDIR)/versions.yaml
+	$(MULTIMOD) prerelease --module-set-names tools --versioning-file $(CURDIR)/versions.yaml --skip-go-mod-tidy
 
 print-tags: multimod-verify $(MULTIMOD)
 	$(MULTIMOD) tag --module-set-name tools --preview-tags

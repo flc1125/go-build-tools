@@ -54,7 +54,8 @@ func run(goBinary string) error {
 	if err != nil {
 		return err
 	}
-	for _, path := range paths {
+	// The root module supplies shared packages; only CLI modules are installable.
+	for _, path := range paths[1:] {
 		fmt.Printf("Checking go install %s@latest\n", path)
 		cmd := exec.Command(goBinary, "install", "-modcacherw", path+"@latest")
 		cmd.Dir = tmp
@@ -100,9 +101,23 @@ func fileURL(path string) string {
 }
 
 func createProxy(root, proxy string) ([]string, error) {
-	var paths []string
-	for _, dir := range []string{"crosslink", "gotmpl", "multimod"} {
-		path, err := writeModule(root, dir, proxy)
+	gomod, err := os.ReadFile(filepath.Join(root, "go.mod"))
+	if err != nil {
+		return nil, err
+	}
+	rootPath := modfile.ModulePath(gomod)
+	dirs := []string{"crosslink", "gotmpl", "multimod"}
+	version, err := requiredRootVersion(root, rootPath, dirs)
+	if err != nil {
+		return nil, err
+	}
+	path, err := writeModule(root, ".", proxy, version)
+	if err != nil {
+		return nil, fmt.Errorf("cannot prepare shared root module: %w", err)
+	}
+	paths := []string{path}
+	for _, dir := range dirs {
+		path, err = writeModule(root, dir, proxy, fixtureVersion)
 		if err != nil {
 			return nil, fmt.Errorf("cannot prepare %s installation: %w", dir, err)
 		}
@@ -111,13 +126,45 @@ func createProxy(root, proxy string) ([]string, error) {
 	return paths, nil
 }
 
-func writeModule(root, dir, proxy string) (string, error) {
+func requiredRootVersion(root, rootPath string, dirs []string) (string, error) {
+	var version string
+	for _, dir := range dirs {
+		path := filepath.Join(root, dir, "go.mod")
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return "", err
+		}
+		f, err := modfile.Parse(path, data, nil)
+		if err != nil {
+			return "", err
+		}
+		for _, dependency := range f.Require {
+			if dependency.Mod.Path != rootPath {
+				continue
+			}
+			if version != "" && version != dependency.Mod.Version {
+				return "", fmt.Errorf("root module versions do not match: %s requires %s instead of %s", dir, dependency.Mod.Version, version)
+			}
+			version = dependency.Mod.Version
+		}
+	}
+	if version == "" {
+		return "", errors.New("CLI modules do not require the shared root module")
+	}
+	return version, nil
+}
+
+func writeModule(root, dir, proxy, version string) (string, error) {
 	gomod, err := os.ReadFile(filepath.Join(root, dir, "go.mod"))
 	if err != nil {
 		return "", err
 	}
 	path := modfile.ModulePath(gomod)
 	escaped, err := module.EscapePath(path)
+	if err != nil {
+		return "", err
+	}
+	escapedVersion, err := module.EscapeVersion(version)
 	if err != nil {
 		return "", err
 	}
@@ -128,14 +175,14 @@ func writeModule(root, dir, proxy string) (string, error) {
 	info, err := json.Marshal(struct {
 		Version string
 		Time    time.Time
-	}{fixtureVersion, time.Unix(0, 0).UTC()})
+	}{version, time.Unix(0, 0).UTC()})
 	if err != nil {
 		return "", err
 	}
 	files := map[string][]byte{
-		filepath.Join(versionDir, fixtureVersion+".mod"):  gomod,
-		filepath.Join(versionDir, fixtureVersion+".info"): info,
-		filepath.Join(versionDir, "list"):                 []byte(fixtureVersion + "\n"),
+		filepath.Join(versionDir, escapedVersion+".mod"):  gomod,
+		filepath.Join(versionDir, escapedVersion+".info"): info,
+		filepath.Join(versionDir, "list"):                 []byte(version + "\n"),
 		filepath.Join(proxy, escaped, "@latest"):          info,
 	}
 	for name, data := range files {
@@ -143,13 +190,13 @@ func writeModule(root, dir, proxy string) (string, error) {
 			return "", err
 		}
 	}
-	if err = writeZip(root, dir, filepath.Join(versionDir, fixtureVersion+".zip"), path); err != nil {
+	if err = writeZip(root, dir, filepath.Join(versionDir, escapedVersion+".zip"), path, version); err != nil {
 		return "", err
 	}
 	return path, nil
 }
 
-func writeZip(root, dir, archivePath, modulePath string) error {
+func writeZip(root, dir, archivePath, modulePath, version string) error {
 	cmd := exec.Command("git", "ls-files", "-z", "--", dir)
 	cmd.Dir = root
 	output, err := cmd.Output()
@@ -169,7 +216,7 @@ func writeZip(root, dir, archivePath, modulePath string) error {
 	if err != nil {
 		return err
 	}
-	err = modzip.Create(archive, module.Version{Path: modulePath, Version: fixtureVersion}, files)
+	err = modzip.Create(archive, module.Version{Path: modulePath, Version: version}, files)
 	return errors.Join(err, archive.Close())
 }
 
